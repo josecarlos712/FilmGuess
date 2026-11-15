@@ -112,3 +112,12 @@ En los registros de la consola el token se sustituye por `****` (el WebSocket lo
 - El token llega en el enlace del QR (`/m/#token=…`): se guarda en el móvil y se quita de la URL. Como la página la sirve el propio PC, la conexión manual solo pide el código, no la IP.
 - `PATCH /players/{id}` con `{nombre}` cambia el nombre de un jugador (mismas reglas que el alta).
 - «Película al azar» oculta título y póster en el móvil hasta revelar.
+
+## Panel del PC (F6)
+
+- `/panel` y `/panel/api/*` solo desde 127.0.0.1, sin token. La lógica está en `filmguess.panel.service.PanelService`.
+- `GET /panel/api/estado`: navegador, sesión de Netflix, móviles y tele conectados (`EventHub` distingue papeles), última orden y error, recuentos del catálogo, importación en curso y URL del QR.
+- `POST /panel/api/token`: genera un código nuevo, lo guarda en `config.toml` y cierra los WebSocket de los móviles (código 1008), que tienen que volver a escanear el QR.
+- `POST /panel/api/importar`: lanza `run_import` en un hilo; el progreso se lee en el estado.
+- `GET /panel/api/revisar?confianza=baja|sin_match&pagina=N`; `POST /panel/api/peliculas/{id}/tmdb {tmdb}` corrige a mano (confianza alta, `manual=1`); `POST /panel/api/peliculas {netflix, tmdb}` da de alta por enlaces.
+- `POST /panel/api/netflix-login` saca Edge de la pantalla completa y abre el inicio de sesión; `POST /panel/api/espera` vuelve a la pantalla de espera.

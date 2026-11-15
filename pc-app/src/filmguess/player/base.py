@@ -80,6 +80,10 @@ class Player(Protocol):
         """Vuelve a la pantalla de espera."""
         ...
 
+    async def open_login(self) -> None:
+        """Abre el inicio de sesión de Netflix en una ventana normal (sin pantalla completa)."""
+        ...
+
 
 class UnavailablePlayer:
     """Reproductor de reserva mientras no hay navegador: todas las órdenes fallan con claridad."""
@@ -132,6 +136,14 @@ class UnavailablePlayer:
 
     async def idle(self) -> None:
         """No hay nada que hacer sin navegador."""
+
+    async def open_login(self) -> None:
+        """Siempre falla.
+
+        Raises:
+            PlayerError: Siempre, con ``navegador_cerrado``.
+        """
+        raise self._error()
 
     @staticmethod
     def _error() -> PlayerError:

@@ -49,6 +49,9 @@ class FakePlayer:
     async def idle(self) -> None:
         self._check("idle", None)
 
+    async def open_login(self) -> None:
+        self._check("open_login", None)
+
     def _check(self, name: str, args: object) -> None:
         self.calls.append((name, args))
         if self.fail is not None:

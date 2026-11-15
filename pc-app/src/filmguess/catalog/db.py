@@ -324,6 +324,33 @@ class CatalogDB:
         keys = ("total", "pendientes", "alta", "media", "baja", "sin_match", "netflix_es", "imdb")
         return {k: int(v or 0) for k, v in zip(keys, row, strict=True)}
 
+    def to_review(
+        self, confidence: Confidence, *, limit: int, offset: int = 0
+    ) -> tuple[list[Movie], int]:
+        """Emparejamientos dudosos que no se han corregido a mano, para revisarlos.
+
+        Args:
+            confidence: ``baja`` o ``sin_match``.
+            limit: Tamaño de página.
+            offset: Desplazamiento.
+
+        Returns:
+            La página (primero las disponibles en España y las más votadas) y el total.
+        """
+        where = "WHERE m.match_conf = ? AND m.manual = 0"
+        total = int(
+            self._conn.execute(f"SELECT COUNT(*) FROM movies m {where}", (confidence,)).fetchone()[
+                0
+            ]
+        )
+        rows = self._conn.execute(
+            f"{_SELECT_MOVIE} {where} "
+            "ORDER BY COALESCE(m.netflix_es, 0) DESC, COALESCE(m.imdb_votes, 0) DESC, "
+            "m.netflix_id LIMIT ? OFFSET ?",
+            (confidence, limit, offset),
+        ).fetchall()
+        return [_row_to_movie(r) for r in rows], total
+
     def search_fts(
         self, fts_query: str, *, only_netflix_es: bool, limit: int, offset: int
     ) -> tuple[list[Movie], int]:

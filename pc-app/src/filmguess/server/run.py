@@ -5,17 +5,21 @@ from __future__ import annotations
 import copy
 import logging
 import re
+from collections.abc import Callable
 from typing import Any
 
 import uvicorn
 from uvicorn.config import LOGGING_CONFIG
 
 from filmguess.catalog.db import CatalogDB
-from filmguess.catalog.service import db_path
-from filmguess.config import AppConfig
+from filmguess.catalog.importer import ImportProgress
+from filmguess.catalog.service import ImportOptions, ImportSummary, db_path, run_import
+from filmguess.catalog.tmdb import TmdbClient
+from filmguess.config import AppConfig, save_config
 from filmguess.game.scoreboard import Scoreboard
 from filmguess.game.session import GameSession
 from filmguess.pairing.network import local_ip, pairing_url, qr_text
+from filmguess.panel.service import PanelService
 from filmguess.player.base import Player
 from filmguess.player.browser import Browser
 from filmguess.player.netflix import NetflixPlayer
@@ -70,7 +74,8 @@ def serve(config: AppConfig, player: Player | None = None) -> None:
             config.random,
         )
         ip = local_ip()
-        app = create_app(session, config.pairing.token, port=config.server.port, ip=ip)
+        panel = panel_service(config, db)
+        app = create_app(session, config.pairing.token, port=config.server.port, ip=ip, panel=panel)
         url = pairing_url(ip, config.server.port, config.pairing.token)
         print("Adivina la Peli: escanea este QR con el móvil (misma WiFi que el PC).")
         print(qr_text(url))
@@ -98,6 +103,38 @@ def uvicorn_log_config() -> dict[str, Any]:
     for handler in log_config["handlers"].values():
         handler.setdefault("filters", []).append("redact_token")
     return log_config
+
+
+def panel_service(config: AppConfig, db: CatalogDB) -> PanelService:
+    """Servicio del panel con el guardado del token, TMDB y la importación reales.
+
+    Args:
+        config: Configuración (se reescribe ``config.toml`` al cambiar el token).
+        db: Catálogo abierto por el servidor.
+
+    Returns:
+        El servicio.
+    """
+
+    def save_token(token: str) -> None:
+        config.pairing.token = token
+        save_config(config)
+
+    def tmdb() -> TmdbClient:
+        return TmdbClient(
+            config.tmdb.api_key, language=config.tmdb.language, region=config.tmdb.region
+        )
+
+    def run(progress: Callable[[ImportProgress], None]) -> ImportSummary:
+        return run_import(config, ImportOptions(), progress)
+
+    return PanelService(
+        db,
+        token=config.pairing.token,
+        save_token=save_token,
+        tmdb=tmdb if config.tmdb.api_key else None,
+        run_import=run,
+    )
 
 
 def netflix_player(config: AppConfig) -> NetflixPlayer:

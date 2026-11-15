@@ -115,6 +115,20 @@ class Browser:
         assert self._page is not None
         return self._page
 
+    async def leave_fullscreen(self) -> None:
+        """Deja la ventana en tamaño normal (para iniciar sesión a mano)."""
+        page = await self.page()
+        try:
+            cdp = await page.context.new_cdp_session(page)
+            window: dict[str, Any] = await cdp.send("Browser.getWindowForTarget")
+            await cdp.send(
+                "Browser.setWindowBounds",
+                {"windowId": window["windowId"], "bounds": {"windowState": "normal"}},
+            )
+            await cdp.detach()
+        except PlaywrightError as exc:
+            log.warning("No se pudo quitar la pantalla completa: %s", exc.message)
+
     async def fullscreen(self) -> None:
         """Pone la ventana a pantalla completa (por CDP, porque F11 no llega a Playwright).
 

@@ -14,6 +14,7 @@ MOBILE_DIR = Path(__file__).resolve().parents[3] / "mobile-app"
 
 SYSTEM_CSS = WEB_DIR / "system.css"
 TV_PAGE = WEB_DIR / "tv" / "index.html"
+PANEL_PAGE = WEB_DIR / "panel" / "index.html"
 
 _TOKENS = re.compile(r"/\* tokens:start \*/\s*:root\s*\{(?P<body>.*?)\}\s*/\* tokens:end \*/", re.S)
 

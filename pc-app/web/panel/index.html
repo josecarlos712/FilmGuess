@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="es" data-type="software" data-radius="soft">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="page-type" content="software" />
+    <meta name="site-kind" content="gaming" />
+    <meta name="theme-color" content="#111111" />
+    <meta name="description" content="Panel del PC de Adivina la Peli: estado, conexión del móvil y catálogo." />
+    <title>Panel · Adivina la Peli</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400..700&family=Figtree:wght@400..600&family=Martian+Mono:wght@400..500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/system.css" />
+    <link rel="stylesheet" href="/static/panel/panel.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <p class="brand" data-text="marca"></p>
+        <p class="muted small" data-text="subtitulo"></p>
+        <nav class="side-nav" aria-label="Secciones">
+          <a href="#estado" data-text="navEstado"></a>
+          <a href="#conexion" data-text="navConexion"></a>
+          <a href="#netflix" data-text="navNetflix"></a>
+          <a href="#catalogo" data-text="navCatalogo"></a>
+          <a href="#alta" data-text="navAlta"></a>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <p id="sin-servidor" class="banner error hidden" role="alert" data-text="sinServidor"></p>
+
+        <section id="estado" class="block" aria-labelledby="t-estado">
+          <h1 id="t-estado" class="block-title" data-text="estadoTitulo"></h1>
+          <div class="tiles">
+            <div class="tile card"><p class="tile-label" data-text="navegador"></p><p id="v-navegador" class="tile-value"></p></div>
+            <div class="tile card"><p class="tile-label" data-text="sesion"></p><p id="v-sesion" class="tile-value"></p></div>
+            <div class="tile card"><p class="tile-label" data-text="moviles"></p><p id="v-moviles" class="tile-value num"></p></div>
+            <div class="tile card"><p class="tile-label" data-text="tele"></p><p id="v-tele" class="tile-value"></p></div>
+          </div>
+          <dl class="facts">
+            <div><dt data-text="ultimaOrden"></dt><dd id="v-orden"></dd></div>
+            <div><dt data-text="ultimoError"></dt><dd id="v-error"></dd></div>
+          </dl>
+        </section>
+
+        <section id="conexion" class="block" aria-labelledby="t-conexion">
+          <h2 id="t-conexion" class="block-title" data-text="conexionTitulo"></h2>
+          <div class="pair card">
+            <div class="qr"><img id="qr" src="/pairing/qr.svg" alt="" width="200" height="200" /></div>
+            <div class="pair-text">
+              <p data-text="conexionAyuda"></p>
+              <p id="url" class="url num"></p>
+              <div class="actions">
+                <button id="btn-copiar" type="button" class="btn secondary" data-text="copiar"></button>
+                <button id="btn-token" type="button" class="btn secondary" data-text="regenerar"></button>
+              </div>
+              <p class="muted small" data-text="regenerarAyuda"></p>
+              <p id="msg-conexion" class="note hidden" role="status"></p>
+            </div>
+          </div>
+        </section>
+
+        <section id="netflix" class="block" aria-labelledby="t-netflix">
+          <h2 id="t-netflix" class="block-title" data-text="netflixTitulo"></h2>
+          <p class="lead" data-text="netflixAyuda"></p>
+          <div class="actions">
+            <button id="btn-login" type="button" class="btn" data-text="abrirNetflix"></button>
+            <button id="btn-espera" type="button" class="btn secondary" data-text="volverEspera"></button>
+          </div>
+          <p id="msg-netflix" class="note hidden" role="status"></p>
+        </section>
+
+        <section id="catalogo" class="block" aria-labelledby="t-catalogo">
+          <h2 id="t-catalogo" class="block-title" data-text="catalogoTitulo"></h2>
+          <dl id="stats" class="stats"></dl>
+          <div class="import card">
+            <div class="import-head">
+              <p class="lead" data-text="importarAyuda"></p>
+              <button id="btn-importar" type="button" class="btn" data-text="importar"></button>
+            </div>
+            <div id="import-progress" class="hidden">
+              <div class="bar"><span id="import-bar"></span></div>
+              <p id="import-text" class="muted small num"></p>
+            </div>
+            <p id="import-done" class="muted small hidden"></p>
+            <p id="msg-importar" class="note hidden" role="status"></p>
+          </div>
+
+          <h3 class="sub-title" data-text="revisarTitulo"></h3>
+          <p class="muted" data-text="revisarAyuda"></p>
+          <div class="segmented" role="group">
+            <button type="button" class="seg on" data-conf="baja"></button>
+            <button type="button" class="seg" data-conf="sin_match"></button>
+          </div>
+          <table class="review">
+            <thead>
+              <tr>
+                <th scope="col" data-text="colCsv"></th>
+                <th scope="col" data-text="colTmdb"></th>
+                <th scope="col" data-text="colCorregir"></th>
+              </tr>
+            </thead>
+            <tbody id="revisar"></tbody>
+          </table>
+          <p id="nada" class="muted hidden" data-text="nadaQueRevisar"></p>
+          <div class="pager">
+            <button id="btn-anterior" type="button" class="btn secondary" data-text="anterior"></button>
+            <p id="pagina" class="muted small num"></p>
+            <button id="btn-siguiente" type="button" class="btn secondary" data-text="siguiente"></button>
+          </div>
+        </section>
+
+        <section id="alta" class="block" aria-labelledby="t-alta">
+          <h2 id="t-alta" class="block-title" data-text="altaTitulo"></h2>
+          <p class="lead" data-text="altaAyuda"></p>
+          <form id="form-alta" class="add card" novalidate>
+            <label class="field">
+              <span class="field-label" data-text="altaNetflix"></span>
+              <input id="alta-netflix" type="url" autocomplete="off" required />
+            </label>
+            <label class="field">
+              <span class="field-label" data-text="altaTmdb"></span>
+              <input id="alta-tmdb" type="url" autocomplete="off" required />
+            </label>
+            <button type="submit" class="btn" data-text="anadir"></button>
+          </form>
+          <p id="msg-alta" class="note hidden" role="status"></p>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/static/panel/panel.js"></script>
+  </body>
+</html>

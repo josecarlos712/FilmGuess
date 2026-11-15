@@ -272,6 +272,17 @@ class GameSession:
         await self._emit_scoreboard()
         return player
 
+    async def open_login(self) -> None:
+        """Saca el navegador de la pantalla completa y abre el inicio de sesión de Netflix.
+
+        Raises:
+            GameError: Si el reproductor falla.
+        """
+        await self._run("login", self.player.open_login())
+        self.round = None
+        self.screen = "espera"
+        await self._emit_state()
+
     async def rename_player(self, player_id: str, name: str) -> Player:
         """Cambia el nombre de un jugador.
 

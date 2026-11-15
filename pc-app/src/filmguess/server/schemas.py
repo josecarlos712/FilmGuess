@@ -72,6 +72,38 @@ def movie_detail(movie: Movie) -> dict[str, Any]:
     }
 
 
+def review_item(movie: Movie) -> dict[str, Any]:
+    """Película del panel (emparejamiento para revisar o recién corregido).
+
+    Args:
+        movie: Película.
+
+    Returns:
+        Datos del CSV y de TMDB para compararlos.
+    """
+    return movie_summary(movie) | {
+        "tituloCsv": movie.csv_title,
+        "tmdbId": movie.tmdb_id,
+        "confianza": movie.match_conf,
+        "manual": movie.manual,
+        "disponibleEs": movie.netflix_es,
+        "votosImdb": movie.imdb_votes,
+    }
+
+
+class CorrectRequest(BaseModel):
+    """Cuerpo de ``POST /panel/api/peliculas/{id}/tmdb``."""
+
+    tmdb: str = Field(min_length=1, max_length=300)
+
+
+class AddMovieRequest(BaseModel):
+    """Cuerpo de ``POST /panel/api/peliculas``."""
+
+    netflix: str = Field(min_length=1, max_length=300)
+    tmdb: str = Field(min_length=1, max_length=300)
+
+
 def search_page(page: SearchPage) -> dict[str, Any]:
     """Página de resultados.
 

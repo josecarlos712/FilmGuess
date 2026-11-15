@@ -12,6 +12,7 @@ from filmguess.player.base import PlayerError, PlayerStatus, RevealInfo
 log = logging.getLogger(__name__)
 
 WATCH_URL = "https://www.netflix.com/watch/{id}?t={seconds}"
+LOGIN_URL = "https://www.netflix.com/login"
 TOLERANCE_S = 2.0
 POLL_S = 0.15
 MAX_REDIRECTS = 2
@@ -56,6 +57,10 @@ class BrowserLike(Protocol):
 
     async def fullscreen(self) -> None:
         """Pantalla completa."""
+        ...
+
+    async def leave_fullscreen(self) -> None:
+        """Ventana normal."""
         ...
 
     async def close(self) -> None:
@@ -195,6 +200,17 @@ class NetflixPlayer:
         page = await self.browser.page()
         await self._goto(page, self.idle_url)
         await self.browser.fullscreen()
+
+    async def open_login(self) -> None:
+        """Abre el inicio de sesión de Netflix en una ventana normal.
+
+        Raises:
+            PlayerError: Si el navegador está cerrado.
+        """
+        page = await self.browser.page()
+        await self.browser.leave_fullscreen()
+        await self._goto(page, LOGIN_URL)
+        self._session = None
 
     # --- Internos --------------------------------------------------------------------
 
