@@ -114,6 +114,8 @@
       currentTime: t,
       paused: p ? p.isPaused() : v ? v.paused : null,
       hasApi: !!p,
+      hasVideo: !!v,
+      readyState: v ? v.readyState : null,
       duration: p ? p.getDuration() / 1000 : v ? v.duration : null,
     };
   };

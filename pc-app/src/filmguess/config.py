@@ -40,7 +40,7 @@ class BrowserConfig(BaseModel):
 
 class NetflixConfig(BaseModel):
     profile_name: str = ""
-    play_timeout_s: float = Field(default=15, gt=0)
+    play_timeout_s: float = Field(default=30, gt=0)
     selectors: dict[str, str] = {}
     """Cambios a los selectores de Netflix (ver ``player/overlays.py``)."""
 

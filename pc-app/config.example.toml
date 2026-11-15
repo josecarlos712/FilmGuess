@@ -17,7 +17,7 @@ fullscreen = true
 
 [netflix]
 profile_name = ""         # Nombre del perfil de Netflix que se elegirá automáticamente.
-play_timeout_s = 15       # Tiempo máximo para dejar el fotograma listo.
+play_timeout_s = 30       # Tiempo máximo para dejar el fotograma listo (a la mitad se recarga una vez).
 
 [tmdb]
 api_key = ""              # Clave (v3) o token de lectura (v4) de themoviedb.org.

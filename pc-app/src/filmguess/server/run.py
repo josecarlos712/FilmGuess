@@ -6,6 +6,8 @@ import copy
 import logging
 import re
 from collections.abc import Callable
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
 from typing import Any
 
 import uvicorn
@@ -27,6 +29,8 @@ from filmguess.player.overlays import init_script
 from filmguess.server.app import create_app
 
 SCOREBOARD_FILENAME = "scoreboard.json"
+LOG_FILENAME = "filmguess.log"
+LOG_MAX_BYTES = 1_000_000
 _TOKEN_IN_URL = re.compile(r"(token=)[^&\s\"]+")
 
 
@@ -51,6 +55,17 @@ class RedactToken(logging.Filter):
         return True
 
 
+def log_to_file(path: Path) -> None:
+    """Guarda también el registro en un fichero (rotado), para revisar fallos después.
+
+    Args:
+        path: Ruta del fichero de registro.
+    """
+    handler = RotatingFileHandler(path, maxBytes=LOG_MAX_BYTES, backupCount=1, encoding="utf-8")
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    logging.getLogger().addHandler(handler)
+
+
 def serve(config: AppConfig, player: Player | None = None) -> None:
     """Arranca el servidor y el navegador, y bloquea hasta que se detiene (Ctrl+C).
 
@@ -65,6 +80,7 @@ def serve(config: AppConfig, player: Player | None = None) -> None:
         level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
     )
     data_dir = config.resolve(config.catalog.data_dir)
+    log_to_file(data_dir / LOG_FILENAME)
     db = CatalogDB(db_path(config))
     try:
         session = GameSession(

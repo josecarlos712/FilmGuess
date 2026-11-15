@@ -225,6 +225,15 @@ async def test_play_errores(state: dict[str, Any], code: str) -> None:
     assert exc.value.code == code
 
 
+async def test_si_se_queda_cargando_recarga_una_vez() -> None:
+    page = FakePage([{"kind": "loading", "hasVideo": False}])
+    player, _ = make(page, timeout=2)
+
+    with pytest.raises(PlayerError, match="no llegó a aparecer"):
+        await player.play(1, 10)
+    assert len(page.urls) == 2
+
+
 async def test_sesion_caducada_se_refleja_en_el_estado() -> None:
     player, _ = make(FakePage([{"kind": "login"}]))
 

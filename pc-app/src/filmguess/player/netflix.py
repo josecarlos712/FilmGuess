@@ -16,6 +16,7 @@ LOGIN_URL = "https://www.netflix.com/login"
 TOLERANCE_S = 2.0
 POLL_S = 0.15
 MAX_REDIRECTS = 2
+RELOAD_AT_FRACTION = 0.5
 ERROR_TEXT_MAX = 120
 CALL_JS = """([name, arg]) => {
   if (!window.__fg) return { __missing: true };
@@ -286,6 +287,9 @@ class NetflixPlayer:
         redirects = 0
         chose_profile = False
         retried_error = False
+        retried_loading = False
+        # Si el reproductor se queda colgado cargando, a mitad del plazo se recarga una vez.
+        reload_at = self._clock() + (deadline - self._clock()) * RELOAD_AT_FRACTION
         while True:
             state = await self._state(page)
             kind = state.get("kind")
@@ -343,9 +347,32 @@ class NetflixPlayer:
                     )
                 await self._goto(page, url)
             if self._clock() >= deadline:
-                raise PlayerError(
-                    "tiempo_agotado", "Netflix tarda demasiado en cargar la película."
+                log.warning(
+                    "Tiempo agotado en %s: pantalla %s, vídeo %s, readyState %s, segundo %s",
+                    page.url,
+                    kind,
+                    state.get("hasVideo"),
+                    state.get("readyState"),
+                    state.get("currentTime"),
                 )
+                where = (
+                    "el vídeo no llegó a aparecer"
+                    if not state.get("hasVideo")
+                    else "el vídeo no terminó de cargar"
+                )
+                raise PlayerError(
+                    "tiempo_agotado",
+                    f"Netflix tarda demasiado en cargar la película ({where}). Prueba otra vez.",
+                )
+            if kind == "loading" and not retried_loading and self._clock() >= reload_at:
+                retried_loading = True
+                log.warning(
+                    "Netflix sigue cargando %s (vídeo %s, readyState %s): se recarga",
+                    page.url,
+                    state.get("hasVideo"),
+                    state.get("readyState"),
+                )
+                await self._goto(page, url)
             await self._sleep(POLL_S)
 
     async def _choose_profile(self, page: PageLike, state: dict[str, Any]) -> bool:
