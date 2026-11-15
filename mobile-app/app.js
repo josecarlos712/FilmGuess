@@ -17,6 +17,7 @@ const state = {
   genres: null, // [{ id, nombre, peliculas }]
   category: null, // { id, nombre } o null
   picked: new Set(), // jugadores marcados como acertantes
+  missed: new Set(), // jugadores marcados como que han fallado
   adjust: false,
 };
 
@@ -162,7 +163,7 @@ function onEvent(kind, data) {
     state.players = data.jugadores || [];
     renderScore();
     renderPeople();
-    renderAward();
+    renderRound();
   } else if (kind === "error") {
     showError("error-ronda", new ApiError(data.error, data.mensaje, 0));
   }
@@ -381,6 +382,7 @@ function renderRound() {
   $("btn-nueva").disabled = loading || !round;
   document.querySelector(".round-actions").classList.toggle("hidden", revealed);
   renderAward();
+  renderFail(playing);
 }
 
 $("btn-elegir").addEventListener("click", () => show("buscar"));
@@ -400,6 +402,12 @@ $("btn-dar").addEventListener("click", (e) =>
   run(e.currentTarget, "error-ronda", async () => {
     await state.api.award([...state.picked]);
     state.picked.clear();
+  }),
+);
+$("btn-restar").addEventListener("click", (e) =>
+  run(e.currentTarget, "error-ronda", async () => {
+    await state.api.fail([...state.missed]);
+    state.missed.clear();
   }),
 );
 $("btn-ajustar").addEventListener("click", () => {
@@ -514,6 +522,38 @@ function renderAward() {
   $("acierto-vacio").classList.toggle("hidden", state.players.length > 0);
   $("btn-dar").classList.toggle("hidden", state.players.length === 0);
   $("btn-dar").disabled = state.picked.size === 0;
+}
+
+// --- Fallos -------------------------------------------------------------------------
+
+function renderFail(playing) {
+  const round = state.status && state.status.rondaActual;
+  const show = Boolean(round) && !round.revelada && state.players.length > 0;
+  $("fallo").classList.toggle("hidden", !show);
+  if (!show) {
+    state.missed.clear();
+    return;
+  }
+  $("fallo-titulo").textContent = TEXTOS.quienFallo(round.valor);
+  const list = $("fallo-jugadores");
+  list.replaceChildren();
+  const done = new Set(round.fallos || []);
+  for (const p of state.players) {
+    const charged = done.has(p.id);
+    const on = charged || state.missed.has(p.id);
+    const chip = el("button", "chip", charged ? `${p.nombre} ✗` : p.nombre);
+    chip.type = "button";
+    chip.classList.toggle("on", on);
+    chip.setAttribute("aria-pressed", String(on));
+    chip.disabled = charged || !playing;
+    chip.addEventListener("click", () => {
+      if (state.missed.has(p.id)) state.missed.delete(p.id);
+      else state.missed.add(p.id);
+      renderFail(playing);
+    });
+    list.appendChild(chip);
+  }
+  $("btn-restar").disabled = !playing || state.missed.size === 0;
 }
 
 // --- Jugadores ---------------------------------------------------------------------

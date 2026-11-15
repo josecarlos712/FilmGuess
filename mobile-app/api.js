@@ -92,6 +92,7 @@ export function createApi(token) {
     skip: () => request("POST", "/skip"),
     clip: () => request("POST", "/clip"),
     award: (jugadores) => request("POST", "/award", { jugadores }),
+    fail: (jugadores) => request("POST", "/fail", { jugadores }),
     play: (netflixId, seconds, categoria) =>
       request("POST", "/play", { netflixId, seconds, categoria: categoria || null }),
     pause: () => request("POST", "/pause"),

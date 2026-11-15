@@ -60,6 +60,9 @@ export const TEXTOS = {
   saltar: "Saltar escena",
   quienAcerto: (n) => `¿Quién ha acertado? Se lleva ${n === 1 ? "1 punto" : `${n} puntos`}.`,
   darPuntos: "Dar los puntos",
+  quienFallo: (n) =>
+    `¿Alguien se ha arriesgado y ha fallado? Pierde ${n === 1 ? "1 punto" : `${n} puntos`}.`,
+  restarPuntos: "Restar los puntos",
   corregir: "Corregir puntos a mano",
   terminarCorregir: "Listo",
   reanudar: "Reanudar",

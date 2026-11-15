@@ -157,6 +157,7 @@ IMDb no tiene API de críticas y prohíbe extraerlas de su web, por eso la crít
 | `POST /hint` | Siguiente pista (409 `sin_pistas`, `ronda_cerrada`) |
 | `POST /frame` | Otro fotograma (409 `sin_fotogramas`) |
 | `POST /clip` | Clip de 10 s (409 `clip_usado`) |
+| `POST /fail` | `{jugadores}`: resta a quien falla lo que vale la ronda en ese momento, una vez por jugador y ronda (409 `ronda_cerrada` si ya está revelada) |
 | `POST /skip` | Saltar escena |
 | `POST /award` `{jugadores: [id]}` | Reparte los puntos (409 `sin_revelar`) |
 

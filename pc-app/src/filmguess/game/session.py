@@ -65,6 +65,8 @@ class Round:
     """Segundos de los fotogramas mostrados (el primero es el elegido)."""
     clip_used: bool = False
     awarded: set[str] = field(default_factory=set)
+    failed: set[str] = field(default_factory=set)
+    """Jugadores que se han arriesgado y han fallado en esta ronda."""
 
     @property
     def value(self) -> int:
@@ -355,6 +357,37 @@ class GameSession:
         await self._emit_scoreboard()
         await self._emit_state()
         return given
+
+    async def fail(self, player_ids: list[str]) -> list[Player]:
+        """Resta a quien se arriesga y falla los puntos que vale la ronda en ese momento.
+
+        La ronda sigue para los demás. Cada jugador solo puede fallar una vez por ronda.
+
+        Args:
+            player_ids: Jugadores que han fallado.
+
+        Returns:
+            Los jugadores que han perdido puntos.
+
+        Raises:
+            GameError: Si la película ya se ha revelado o algún jugador no existe.
+        """
+        current = self._require_round()
+        if self.screen == "revelada":
+            raise GameError("ronda_cerrada", "La película ya está revelada: nadie puede fallar.")
+        known = {p.id for p in self.scoreboard.players}
+        if any(pid not in known for pid in player_ids):
+            raise GameError("jugador_no_encontrado", "Ese jugador ya no está en el marcador.")
+        charged: list[Player] = []
+        value = current.value
+        for pid in dict.fromkeys(player_ids):
+            if pid in current.failed:
+                continue
+            charged.append(self._give(pid, -value))
+            current.failed.add(pid)
+        await self._emit_scoreboard()
+        await self._emit_state()
+        return charged
 
     async def pause(self) -> None:
         """Pausa la película de la ronda.

@@ -148,6 +148,26 @@ async def test_clip_reproduce_y_vuelve_a_pausar(
     assert exc.value.code == "clip_usado"
 
 
+def test_quien_se_arriesga_y_falla_pierde_lo_que_vale_la_ronda(client: TestClient) -> None:
+    ids = []
+    for name in ("Ana", "Luis"):
+        jugadores = client.post("/players", json={"nombre": name}, headers=HEADERS).json()
+        ids.append(next(j["id"] for j in jugadores["jugadores"] if j["nombre"] == name))
+    client.post("/play", json={"netflixId": ORIGEN, "seconds": 600}, headers=HEADERS)
+
+    client.post("/fail", json={"jugadores": ids[:1]}, headers=HEADERS)  # Ana falla con 5
+    client.post("/hint", headers=HEADERS)
+    marcador = client.post("/fail", json={"jugadores": ids}, headers=HEADERS).json()  # Luis, con 4
+
+    puntos = {j["nombre"]: j["puntos"] for j in marcador["jugadores"]}
+    assert puntos == {"Ana": -5, "Luis": -4}  # Ana no vuelve a perder
+    assert sorted(ronda(client)["fallos"]) == sorted(ids)  # type: ignore[type-var]
+
+    client.post("/reveal", headers=HEADERS)
+    cerrada = client.post("/fail", json={"jugadores": ids}, headers=HEADERS)
+    assert cerrada.status_code == 409 and cerrada.json()["error"] == "ronda_cerrada"
+
+
 def test_reparto_de_puntos_tras_revelar(client: TestClient) -> None:
     ids = []
     for name in ("Ana", "Luis"):

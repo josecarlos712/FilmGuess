@@ -312,6 +312,11 @@ def create_app(
         await session.award(body.jugadores)
         return schemas.scoreboard(session.scoreboard.players)
 
+    @app.post("/fail", dependencies=authed)
+    async def post_fail(body: schemas.AwardRequest) -> dict[str, Any]:
+        await session.fail(body.jugadores)
+        return schemas.scoreboard(session.scoreboard.players)
+
     @app.post("/pause", dependencies=authed)
     async def post_pause() -> dict[str, Any]:
         await session.pause()

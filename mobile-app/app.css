@@ -671,3 +671,7 @@ input:focus-visible {
   text-decoration: underline;
   cursor: pointer;
 }
+
+.award.fail {
+  border-color: color-mix(in srgb, var(--p-danger) 40%, transparent);
+}

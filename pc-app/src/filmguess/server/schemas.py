@@ -28,7 +28,7 @@ class PlayRequest(BaseModel):
 
 
 class AwardRequest(BaseModel):
-    """Cuerpo de ``POST /award``: quienes han acertado."""
+    """Cuerpo de ``POST /award`` (quienes han acertado) y ``POST /fail`` (quienes fallan)."""
 
     jugadores: list[str] = Field(min_length=1, max_length=20)
 
@@ -183,6 +183,7 @@ def status(state: SessionState) -> dict[str, Any]:
             "fotogramasMax": MAX_FRAMES,
             "clipUsado": r.clip_used,
             "acertantes": sorted(r.awarded),
+            "fallos": sorted(r.failed),
         }
         if state.screen == "revelada":
             current |= movie_summary(state.round.movie)
