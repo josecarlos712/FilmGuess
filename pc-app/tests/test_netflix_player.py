@@ -23,6 +23,8 @@ class FakePage:
         self.calls: list[tuple[str, Any]] = []
         self.position: float | None = None
         self.seek_works = True
+        self.seek_offset = 0.0
+        self.seek_moves = True
         self.choose_ok = True
         self.goto_error: Exception | None = None
         self.on_goto: Callable[[str], None] | None = None
@@ -47,8 +49,8 @@ class FakePage:
                 state["currentTime"] = self.position
             return state
         if name == "seek":
-            if self.seek_works:
-                self.position = float(value)
+            if self.seek_works and self.seek_moves:
+                self.position = float(value) + self.seek_offset
             return self.seek_works
         if name == "chooseProfile":
             return self.choose_ok
@@ -137,6 +139,30 @@ async def test_play_corrige_con_seek_si_no_coincide() -> None:
     assert actual == 600.0
     assert ("seek", 600) in page.calls
     assert len(page.urls) == 1
+
+
+async def test_play_acepta_quedar_unos_segundos_antes_tras_el_salto() -> None:
+    page = FakePage([ready(0.0)])
+    page.seek_offset = -4.5
+    player, _ = make(page)
+
+    assert await player.play(1, 600) == 595.5
+    assert len(page.urls) == 1
+
+
+async def test_play_recarga_a_tiempo_si_el_salto_no_llega() -> None:
+    page = FakePage([ready(0.0)])
+    page.seek_moves = False
+
+    def landed(url: str) -> None:
+        if len(page.urls) == 2:
+            page.position = 598.0
+
+    page.on_goto = landed
+    player, _ = make(page, timeout=30)
+
+    assert await player.play(1, 600) == 598.0
+    assert len(page.urls) == 2
 
 
 async def test_play_recarga_si_el_seek_no_funciona() -> None:

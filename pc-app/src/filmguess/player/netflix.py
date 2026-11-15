@@ -14,6 +14,11 @@ log = logging.getLogger(__name__)
 WATCH_URL = "https://www.netflix.com/watch/{id}?t={seconds}"
 LOGIN_URL = "https://www.netflix.com/login"
 TOLERANCE_S = 2.0
+# Tras un salto, Netflix se coloca en el fotograma clave anterior: puede quedar unos
+# segundos antes del pedido. Para el juego es el mismo momento.
+SEEK_TOLERANCE_S = 10.0
+# Lo que se espera a que llegue un salto con la API antes de recargar la página.
+SEEK_WAIT_S = 6.0
 POLL_S = 0.15
 MAX_REDIRECTS = 2
 RELOAD_AT_FRACTION = 0.5
@@ -388,10 +393,15 @@ class NetflixPlayer:
         if current is not None and abs(current - seconds) <= TOLERANCE_S:
             return current
         if state.get("hasApi") and await self._call_soft(page, "seek", seconds):
-            current = await self._wait_position(page, seconds, deadline)
+            until = min(deadline, self._clock() + SEEK_WAIT_S)
+            current = await self._wait_position(page, seconds, until)
             if current is not None:
                 return current
-        log.info("El salto con la API no llegó; se recarga con ?t=%d", seconds)
+        log.info(
+            "El salto con la API no llegó (está en %s s); se recarga con ?t=%d",
+            (await self._state(page)).get("currentTime"),
+            seconds,
+        )
         await self._goto(page, url)
         state = await self._wait_ready(page, url, deadline)
         current = await self._wait_position(page, seconds, deadline)
@@ -408,7 +418,7 @@ class NetflixPlayer:
             state = await self._state(page)
             current = _as_float(state.get("currentTime"))
             ready = state.get("kind") == "ready" and current is not None
-            if ready and current is not None and abs(current - seconds) <= TOLERANCE_S:
+            if ready and current is not None and _landed(current, seconds):
                 return current
             await self._sleep(POLL_S)
         return None
@@ -418,6 +428,11 @@ class NetflixPlayer:
         if not self.browser.is_open() or "closed" in message.lower():
             return PlayerError("navegador_cerrado", "Se ha cerrado el navegador de la tele.")
         return PlayerError("netflix_error", f"Fallo al controlar Netflix: {message[:200]}")
+
+
+def _landed(current: float, seconds: int) -> bool:
+    """Si el reproductor ha quedado en el momento pedido (o justo antes, tras un salto)."""
+    return -SEEK_TOLERANCE_S <= current - seconds <= TOLERANCE_S
 
 
 def _as_float(value: object) -> float | None:
