@@ -1,0 +1,30 @@
+# Entorno
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Datos locales (catálogo, perfil del navegador, marcador, CSV)
+data/
+
+# Configuración con token y claves
+pc-app/config.toml
+
+# Node (verificador de taste-skill)
+node_modules/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# taste-skill (39 MB, se reinstala con docs/04-diseno.md)
+.claude/skills/design-taste-frontend/
+
+# Empaquetado
+*.egg-info/
+build/
+dist/

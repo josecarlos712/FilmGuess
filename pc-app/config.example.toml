@@ -1,0 +1,35 @@
+# Configuración de Adivina la Peli.
+# Al primer arranque se copia a config.toml (que no se versiona) y se genera el token.
+# Las rutas relativas se resuelven desde la carpeta pc-app/.
+
+[server]
+host = "0.0.0.0"          # Escucha en la red local; solo se aceptan IP privadas.
+port = 8765
+
+[pairing]
+token = ""                # Vacío = se genera uno nuevo al arrancar.
+
+[browser]
+channel = "msedge"        # "msedge" (Microsoft Edge) o "chrome" (Google Chrome).
+profile_dir = "../data/browser-profile"
+disable_gpu = false       # Ponlo a true si la tele muestra el vídeo en negro.
+fullscreen = true
+
+[netflix]
+profile_name = ""         # Nombre del perfil de Netflix que se elegirá automáticamente.
+play_timeout_s = 15       # Tiempo máximo para dejar el fotograma listo.
+
+[tmdb]
+api_key = ""              # Clave (v3) o token de lectura (v4) de themoviedb.org.
+language = "es-ES"
+region = "ES"
+
+[catalog]
+data_dir = "../data"
+csv_file = "../data/movies.csv"
+
+[random]
+min_year = 1991           # Solo películas estrenadas después de 1990.
+min_votes = 25000         # Votos mínimos en IMDb para considerarla "conocida".
+pool_size = 500           # Tamaño del grupo de las mejor valoradas.
+no_repeat = 50            # No repetir las últimas N rondas.
