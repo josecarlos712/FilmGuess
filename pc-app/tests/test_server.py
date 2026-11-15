@@ -371,3 +371,37 @@ def test_revelar_usa_poster_grande(client: TestClient, player: FakePlayer) -> No
     assert info.title == "Origen"
     assert info.original_title == "Inception"
     assert info.poster_url is not None and "/w780/" in info.poster_url
+
+
+# --- Móvil (/m/) ------------------------------------------------------------------
+
+
+def test_movil_se_sirve_en_la_red_local(client: TestClient) -> None:
+    redirect = client.get("/m", follow_redirects=False)
+    assert redirect.status_code in (307, 308)
+    assert redirect.headers["location"].endswith("/m/")
+
+    page = client.get("/m/")
+    assert page.status_code == 200
+    assert '<script type="module" src="app.js">' in page.text
+    for name in ("app.js", "api.js", "wheel.js", "textos.js", "app.css"):
+        assert client.get(f"/m/{name}").status_code == 200, name
+
+
+def test_renombrar_jugador(client: TestClient) -> None:
+    ana = client.post("/players", json={"nombre": "Ana"}, headers=HEADERS).json()["jugadores"][0]
+    client.post("/players", json={"nombre": "Luis"}, headers=HEADERS)
+
+    ok = client.patch(f"/players/{ana['id']}", json={"nombre": "  Ana  María "}, headers=HEADERS)
+    assert ok.status_code == 200
+    assert {p["nombre"] for p in ok.json()["jugadores"]} == {"Ana María", "Luis"}
+
+    repeated = client.patch(f"/players/{ana['id']}", json={"nombre": "luis"}, headers=HEADERS)
+    assert repeated.status_code == 409
+    assert repeated.json()["error"] == "nombre_repetido"
+
+    same = client.patch(f"/players/{ana['id']}", json={"nombre": "ANA MARÍA"}, headers=HEADERS)
+    assert same.status_code == 200
+
+    missing = client.patch("/players/nadie", json={"nombre": "X"}, headers=HEADERS)
+    assert missing.status_code == 404

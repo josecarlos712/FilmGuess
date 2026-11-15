@@ -272,6 +272,23 @@ class GameSession:
         await self._emit_scoreboard()
         return player
 
+    async def rename_player(self, player_id: str, name: str) -> Player:
+        """Cambia el nombre de un jugador.
+
+        Args:
+            player_id: ID del jugador.
+            name: Nombre nuevo.
+
+        Returns:
+            El jugador actualizado.
+
+        Raises:
+            GameError: Si no existe o el nombre no es válido o ya existe.
+        """
+        player = self._scoreboard(lambda: self.scoreboard.rename(player_id, name))
+        await self._emit_scoreboard()
+        return player
+
     async def remove_player(self, player_id: str) -> None:
         """Da de baja un jugador.
 

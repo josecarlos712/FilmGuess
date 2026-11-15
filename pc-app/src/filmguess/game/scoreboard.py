@@ -76,19 +76,43 @@ class Scoreboard:
             ScoreboardError: Si el nombre está vacío, es demasiado largo o ya existe, o si
                 ya hay demasiados jugadores.
         """
-        clean = " ".join(name.split())
-        if not clean:
-            raise ScoreboardError("nombre_invalido", "Escribe un nombre para el jugador.")
-        if len(clean) > MAX_NAME:
-            raise ScoreboardError("nombre_invalido", f"El nombre admite {MAX_NAME} caracteres.")
-        if any(p.name.casefold() == clean.casefold() for p in self._players):
-            raise ScoreboardError("nombre_repetido", f"Ya hay un jugador llamado «{clean}».")
+        clean = self._clean_name(name)
         if len(self._players) >= MAX_PLAYERS:
             raise ScoreboardError("demasiados_jugadores", f"Máximo {MAX_PLAYERS} jugadores.")
         player = Player(secrets.token_hex(4), clean)
         self._players.append(player)
         self._save()
         return player
+
+    def rename(self, player_id: str, name: str) -> Player:
+        """Cambia el nombre de un jugador.
+
+        Args:
+            player_id: ID del jugador.
+            name: Nombre nuevo (se recortan los espacios).
+
+        Returns:
+            El jugador actualizado.
+
+        Raises:
+            ScoreboardError: Si no existe, o si el nombre está vacío, es demasiado largo o
+                lo tiene otro jugador.
+        """
+        player = self._find(player_id)
+        player.name = self._clean_name(name, exclude=player_id)
+        self._save()
+        return player
+
+    def _clean_name(self, name: str, exclude: str | None = None) -> str:
+        clean = " ".join(name.split())
+        if not clean:
+            raise ScoreboardError("nombre_invalido", "Escribe un nombre para el jugador.")
+        if len(clean) > MAX_NAME:
+            raise ScoreboardError("nombre_invalido", f"El nombre admite {MAX_NAME} caracteres.")
+        taken = (p for p in self._players if p.id != exclude)
+        if any(p.name.casefold() == clean.casefold() for p in taken):
+            raise ScoreboardError("nombre_repetido", f"Ya hay un jugador llamado «{clean}».")
+        return clean
 
     def remove(self, player_id: str) -> None:
         """Da de baja un jugador.

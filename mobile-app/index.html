@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es" data-type="software" data-radius="soft">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="page-type" content="software" />
+    <meta name="site-kind" content="gaming" />
+    <meta name="theme-color" content="#111111" />
+    <meta name="description" content="Mando de Adivina la Peli: elige la película y el fotograma que sale en la tele." />
+    <title>Adivina la Peli</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400..700&family=Figtree:wght@400..600&family=Martian+Mono:wght@400..500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/system.css" />
+    <link rel="stylesheet" href="app.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <p class="brand" data-text="marca"></p>
+      <p id="estado-conexion" class="link-state" role="status"></p>
+    </header>
+
+    <nav id="nav" class="steps hidden" aria-label="Pasos">
+      <button type="button" class="step" data-view="buscar" data-text="navPelicula"></button>
+      <button type="button" class="step" data-view="ronda" data-text="navRonda"></button>
+      <button type="button" class="step" data-view="jugadores" data-text="navJugadores"></button>
+    </nav>
+
+    <main id="main">
+      <!-- 1. Conexión -->
+      <section id="view-conexion" class="view hidden" aria-labelledby="t-conexion">
+        <h1 id="t-conexion" class="view-title" data-text="conexionTitulo"></h1>
+        <p class="lead" data-text="conexionAyuda"></p>
+        <form id="form-conexion" class="stack" novalidate>
+          <p class="muted" data-text="conexionManual"></p>
+          <label class="field">
+            <span class="field-label" data-text="conexionToken"></span>
+            <input id="token" name="token" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" required />
+          </label>
+          <p id="error-conexion" class="error hidden" role="alert"></p>
+          <button type="submit" class="btn wide" data-text="conexionBoton"></button>
+          <p id="servidor" class="muted small num"></p>
+        </form>
+      </section>
+
+      <!-- 2. Buscador -->
+      <section id="view-buscar" class="view hidden" aria-labelledby="t-buscar">
+        <h1 id="t-buscar" class="view-title" data-text="buscarTitulo"></h1>
+        <label class="field">
+          <span class="field-label" data-text="buscarCampo"></span>
+          <input id="q" type="search" enterkeyhint="search" autocomplete="off" />
+        </label>
+        <div class="row-between">
+          <label class="switch">
+            <input id="todas" type="checkbox" />
+            <span data-text="incluirTodas"></span>
+          </label>
+        </div>
+        <button id="btn-azar" type="button" class="btn secondary wide" data-text="alAzar"></button>
+        <p id="error-buscar" class="error hidden" role="alert"></p>
+        <p id="total" class="muted small"></p>
+        <ul id="resultados" class="posters"></ul>
+        <p id="sin-resultados" class="muted hidden" data-text="sinResultados"></p>
+        <button id="btn-mas" type="button" class="btn secondary wide hidden" data-text="masResultados"></button>
+      </section>
+
+      <!-- 3. Tiempo -->
+      <section id="view-tiempo" class="view hidden" aria-labelledby="t-tiempo">
+        <button id="btn-atras" type="button" class="back" data-text="atras"></button>
+        <h1 id="t-tiempo" class="view-title" data-text="tiempoTitulo"></h1>
+        <div id="elegida" class="chosen"></div>
+        <div id="rueda" class="wheel" aria-label="Momento de la película"></div>
+        <button id="btn-momento-azar" type="button" class="btn secondary wide" data-text="tiempoAzar"></button>
+        <p id="error-tiempo" class="error hidden" role="alert"></p>
+        <button id="btn-mostrar" type="button" class="btn wide big" data-text="mostrar"></button>
+      </section>
+
+      <!-- 4. Ronda y marcador -->
+      <section id="view-ronda" class="view hidden" aria-labelledby="t-ronda">
+        <h1 id="t-ronda" class="view-title" data-text="rondaTitulo"></h1>
+        <div id="ronda-vacia" class="stack">
+          <p class="muted" data-text="rondaVacia"></p>
+          <button id="btn-elegir" type="button" class="btn wide" data-text="rondaElegir"></button>
+        </div>
+        <div id="ronda-activa" class="stack hidden">
+          <div id="ronda-info" class="round-info card"></div>
+          <div class="controls">
+            <button id="btn-revelar" type="button" class="btn big" data-text="revelar"></button>
+            <button id="btn-pausar" type="button" class="btn secondary" data-text="pausar"></button>
+            <button id="btn-reanudar" type="button" class="btn secondary" data-text="reanudar"></button>
+            <button id="btn-nueva" type="button" class="btn secondary" data-text="nuevaRonda"></button>
+          </div>
+        </div>
+        <p id="error-ronda" class="error hidden" role="alert"></p>
+
+        <h2 class="section-title" data-text="marcadorTitulo"></h2>
+        <ol id="marcador" class="score"></ol>
+        <p id="marcador-vacio" class="muted hidden" data-text="sinJugadores"></p>
+      </section>
+
+      <!-- 5. Jugadores -->
+      <section id="view-jugadores" class="view hidden" aria-labelledby="t-jugadores">
+        <h1 id="t-jugadores" class="view-title" data-text="jugadoresTitulo"></h1>
+        <form id="form-jugador" class="add-row" novalidate>
+          <label class="field grow">
+            <span class="field-label" data-text="nuevoJugador"></span>
+            <input id="nombre" type="text" maxlength="30" autocomplete="off" enterkeyhint="done" />
+          </label>
+          <button type="submit" class="btn" data-text="anadir"></button>
+        </form>
+        <p id="error-jugadores" class="error hidden" role="alert"></p>
+        <ul id="lista-jugadores" class="people"></ul>
+        <button id="btn-cero" type="button" class="btn secondary wide" data-text="ponerACero"></button>
+      </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

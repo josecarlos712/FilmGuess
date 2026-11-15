@@ -1,0 +1,546 @@
+/*
+ * Móvil (/m/). Usa los tokens y botones de /static/system.css.
+ * Se revisa a 390 y 320 px: una columna, botones a todo el ancho, objetivos de 44 px.
+ */
+:root {
+  --gutter: 16px;
+  --tap: 48px;
+}
+
+body {
+  min-height: 100dvh;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  font-size: 16px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* --- Barra superior y pasos --------------------------------------------------------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(10px + env(safe-area-inset-top)) var(--gutter) 10px;
+  background: rgb(17 17 17 / 0.94);
+  backdrop-filter: blur(8px);
+}
+.brand {
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: var(--display-tracking);
+}
+.link-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--p-muted);
+}
+.link-state::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--p-muted);
+}
+.link-state[data-state="ok"]::before {
+  background: #7fb48a;
+}
+.link-state[data-state="off"]::before {
+  background: var(--p-danger);
+}
+
+.steps {
+  position: sticky;
+  top: calc(48px + env(safe-area-inset-top));
+  z-index: 9;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin: 0 var(--gutter);
+  padding: 4px;
+  border: 1px solid var(--p-line);
+  border-radius: var(--radius-m);
+  background: var(--p-surface);
+}
+.step {
+  min-height: 44px;
+  border: 0;
+  border-radius: calc(var(--radius-m) - 4px);
+  background: transparent;
+  color: var(--p-muted);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out);
+}
+.step.on {
+  background: var(--p-surface-2);
+  color: var(--p-ink);
+}
+.step:active {
+  transform: scale(0.98);
+}
+.step:focus-visible,
+.back:focus-visible,
+.poster-card:focus-visible,
+.person-name:focus-visible,
+.icon-btn:focus-visible,
+.round-btn:focus-visible {
+  outline: 3px solid var(--p-accent);
+  outline-offset: 2px;
+}
+
+/* --- Vistas ------------------------------------------------------------------------- */
+
+main {
+  padding: 20px var(--gutter) 0;
+}
+.view {
+  display: grid;
+  gap: 16px;
+  animation: fg-enter 320ms var(--ease-out) both;
+}
+.view-title {
+  font-size: 30px;
+}
+.section-title {
+  margin-top: 16px;
+  font-size: 22px;
+}
+.lead {
+  font-size: 18px;
+  color: var(--p-ink);
+}
+.small {
+  font-size: 14px;
+}
+.stack {
+  display: grid;
+  gap: 12px;
+}
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.error {
+  padding: 12px 14px;
+  border-radius: var(--radius-s);
+  background: rgb(224 128 107 / 0.12);
+  color: var(--p-danger);
+}
+
+.btn {
+  min-height: var(--tap);
+}
+.btn.wide {
+  width: 100%;
+}
+.btn.big {
+  min-height: 56px;
+  font-size: 18px;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+}
+.btn[aria-busy="true"] {
+  opacity: 0.8;
+}
+
+/* --- Campos ------------------------------------------------------------------------- */
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+.field-label {
+  font-size: 14px;
+  color: var(--p-muted);
+}
+input[type="text"],
+input[type="search"] {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 14px;
+  border: 1px solid var(--p-line);
+  border-radius: var(--radius-s);
+  background: var(--p-surface);
+  color: var(--p-ink);
+  font: 16px var(--font-text);
+}
+input:focus-visible {
+  outline: 2px solid var(--p-accent);
+  outline-offset: 0;
+  border-color: transparent;
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.switch input {
+  appearance: none;
+  flex: none;
+  position: relative;
+  width: 44px;
+  height: 26px;
+  margin: 0;
+  border-radius: 13px;
+  background: var(--p-surface-2);
+  border: 1px solid var(--p-line);
+  cursor: pointer;
+  transition: background-color 160ms var(--ease-out);
+}
+.switch input::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--p-muted);
+  transition: transform 160ms var(--ease-out);
+}
+.switch input:checked {
+  background: var(--p-accent);
+}
+.switch input:checked::after {
+  transform: translateX(18px);
+  background: var(--p-accent-ink);
+}
+.switch input:focus-visible {
+  outline: 3px solid var(--p-accent);
+  outline-offset: 2px;
+}
+
+/* --- Pósters ------------------------------------------------------------------------ */
+
+.posters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (orientation: landscape) and (min-width: 560px) {
+  .posters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.poster-card {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.poster-frame {
+  overflow: hidden;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--radius-s);
+  background: var(--p-surface);
+}
+.poster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 220ms var(--ease-out);
+}
+.poster.blank,
+.chosen-poster.blank {
+  display: grid;
+  place-items: center;
+  background: var(--p-surface-2);
+}
+.poster-card:active .poster {
+  transform: scale(1.03);
+}
+@media (hover: hover) {
+  .poster-card:hover .poster {
+    transform: scale(1.03);
+  }
+}
+.poster-title {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.poster-year {
+  font-size: 13px;
+}
+
+/* --- Tiempo ------------------------------------------------------------------------- */
+
+.back {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--p-muted);
+  cursor: pointer;
+}
+.back::before {
+  content: "← ";
+}
+
+.chosen {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+.chosen-poster {
+  width: 72px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-s);
+}
+.chosen-poster.blank {
+  font-family: var(--font-display);
+  font-size: 32px;
+  color: var(--p-accent);
+}
+.chosen-text {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.chosen-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 1.15;
+  letter-spacing: var(--display-tracking);
+}
+
+.wheel {
+  --item: 48px;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--p-line);
+  border-radius: var(--radius-m);
+  background: var(--p-surface);
+}
+.wheel::before {
+  /* Franja de la fila elegida */
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: calc(8px + var(--item) * 2);
+  height: var(--item);
+  border-radius: var(--radius-s);
+  background: var(--p-surface-2);
+  pointer-events: none;
+}
+.wheel-col {
+  position: relative;
+  display: grid;
+  justify-items: center;
+}
+.wheel-list {
+  position: relative;
+  width: 100%;
+  height: calc(var(--item) * 5);
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scroll-padding-top: calc(var(--item) * 2);
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  padding: calc(var(--item) * 2) 0;
+  mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+}
+.wheel-list::-webkit-scrollbar {
+  display: none;
+}
+.wheel-list:focus-visible {
+  outline: 2px solid var(--p-accent);
+  border-radius: var(--radius-s);
+}
+.wheel-item {
+  height: var(--item);
+  display: grid;
+  place-items: center;
+  scroll-snap-align: start;
+  font-size: 22px;
+  color: var(--p-muted);
+  cursor: pointer;
+}
+.wheel-item.on {
+  color: var(--p-ink);
+}
+.wheel-unit {
+  position: absolute;
+  top: calc(var(--item) * 2);
+  right: 6px;
+  height: var(--item);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  color: var(--p-muted);
+  pointer-events: none;
+}
+
+/* --- Ronda y marcador --------------------------------------------------------------- */
+
+.round-info {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+}
+.round-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.15;
+  letter-spacing: var(--display-tracking);
+}
+.controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.controls .big {
+  grid-column: 1 / -1;
+}
+.controls .btn {
+  padding: 0 8px;
+}
+
+.score,
+.people {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.score-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px 3ch 48px;
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  border-bottom: 1px solid var(--p-line);
+}
+.score-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 17px;
+}
+.score-points {
+  text-align: center;
+  font-size: 18px;
+}
+.round-btn {
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--p-line);
+  border-radius: 50%;
+  background: var(--p-surface);
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 120ms var(--ease-out);
+}
+.round-btn.plus {
+  background: var(--p-accent);
+  border-color: transparent;
+  color: var(--p-accent-ink);
+  font-weight: 500;
+}
+.round-btn:active {
+  transform: scale(0.94);
+}
+
+/* --- Jugadores ---------------------------------------------------------------------- */
+
+.add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+}
+.person {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  align-items: center;
+  gap: 8px;
+  min-height: 60px;
+  border-bottom: 1px solid var(--p-line);
+}
+.person-name {
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font-size: 17px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.icon-btn {
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--p-muted);
+  font-size: 24px;
+  cursor: pointer;
+}
+.person-edit {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  padding: 6px 0;
+}
+.person-edit .btn {
+  padding: 0 12px;
+}
+
+@media (max-width: 359px) {
+  :root {
+    --gutter: 12px;
+  }
+  .view-title {
+    font-size: 26px;
+  }
+  .person-edit {
+    grid-template-columns: 1fr 1fr;
+  }
+  .person-edit input {
+    grid-column: 1 / -1;
+  }
+}

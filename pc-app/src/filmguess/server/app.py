@@ -15,7 +15,7 @@ from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI, Header, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Receive, Scope, Send
@@ -31,7 +31,7 @@ from filmguess.pairing.network import (
 from filmguess.player.base import PlayerError
 from filmguess.server import schemas
 from filmguess.server.events import EventHub
-from filmguess.webfiles import TV_PAGE, WEB_DIR
+from filmguess.webfiles import MOBILE_DIR, TV_PAGE, WEB_DIR
 
 log = logging.getLogger(__name__)
 
@@ -278,6 +278,11 @@ def create_app(session: GameSession, token: str, *, port: int, ip: str) -> FastA
         await session.add_player(body.nombre)
         return schemas.scoreboard(session.scoreboard.players)
 
+    @app.patch("/players/{player_id}", dependencies=authed)
+    async def patch_player(player_id: str, body: schemas.NewPlayerRequest) -> dict[str, Any]:
+        await session.rename_player(player_id, body.nombre)
+        return schemas.scoreboard(session.scoreboard.players)
+
     @app.delete("/players/{player_id}", dependencies=authed)
     async def delete_player(player_id: str) -> dict[str, Any]:
         await session.remove_player(player_id)
@@ -335,6 +340,11 @@ def create_app(session: GameSession, token: str, *, port: int, ip: str) -> FastA
         finally:
             await hub.disconnect(websocket)
 
+    @app.get("/m", include_in_schema=False)
+    async def mobile_redirect() -> RedirectResponse:
+        return RedirectResponse("/m/")
+
     app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
+    app.mount("/m", StaticFiles(directory=MOBILE_DIR, html=True), name="mobile")
     app.add_middleware(LocalNetworkOnly)
     return app

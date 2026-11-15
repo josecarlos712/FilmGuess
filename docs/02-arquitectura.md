@@ -105,3 +105,10 @@ En los registros de la consola el token se sustituye por `****` (el WebSocket lo
 - Pantallas de la partida: `espera` → `cargando` → `pelicula` → `revelada`. Al pedir `/play` se emite `cargando` antes de salir de `/tv`; si falla, la partida vuelve a `espera` (se descarta la ronda y el navegador regresa a `/tv`) y la tele muestra el último aviso.
 - En Netflix, `netflix_api.js` tapa el vídeo con «Preparando fotograma…» (`#fg-cover`) desde antes de pintarse hasta que el reproductor lo deja pausado en su segundo (`uncover`).
 - La capa «Revelar» y la cubierta usan los tokens de `web/system.css` (bloque `tokens:start … tokens:end`, leído por `filmguess.webfiles.design_tokens`): póster `w780`, título, título original si es distinto y año.
+
+## Móvil (F5)
+
+- `/m/` sirve `mobile-app/` (HTML, CSS y JS sin compilación) a la red local; usa `/static/system.css`.
+- El token llega en el enlace del QR (`/m/#token=…`): se guarda en el móvil y se quita de la URL. Como la página la sirve el propio PC, la conexión manual solo pide el código, no la IP.
+- `PATCH /players/{id}` con `{nombre}` cambia el nombre de un jugador (mismas reglas que el alta).
+- «Película al azar» oculta título y póster en el móvil hasta revelar.

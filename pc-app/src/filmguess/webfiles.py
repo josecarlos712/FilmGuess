@@ -9,6 +9,9 @@ from pathlib import Path
 WEB_DIR = Path(__file__).resolve().parents[2] / "web"
 """Carpeta con ``system.css``, ``tv/`` y ``panel/``."""
 
+MOBILE_DIR = Path(__file__).resolve().parents[3] / "mobile-app"
+"""Web del móvil (``/m/``), en la raíz del repositorio."""
+
 SYSTEM_CSS = WEB_DIR / "system.css"
 TV_PAGE = WEB_DIR / "tv" / "index.html"
 
