@@ -93,6 +93,10 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="solo suscripción, gratis y con anuncios (sin alquiler ni compra)",
     )
+    sub.add_parser(
+        "netflix-login",
+        help="abre el navegador de la app para iniciar sesión en Netflix (ciérralo al terminar)",
+    )
     sub.add_parser("config", help="muestra la configuración efectiva")
     return parser
 
@@ -130,6 +134,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if command == "servir":
         return _cmd_serve(config)
+    if command == "netflix-login":
+        return _cmd_netflix_login(config)
 
     print(f"El comando «{command}» no existe.")
     return 1
@@ -248,4 +254,27 @@ def _cmd_export_platforms(config: AppConfig, args: argparse.Namespace) -> int:
     elif result.imdb_missing:
         print("IMDb: no hay fichero de valoraciones; usa --descargar-imdb para obtenerlo.")
     print(f"CSV: {result.rows} filas en {dest}")
+    return 0
+
+
+def _cmd_netflix_login(config: AppConfig) -> int:
+    import asyncio
+
+    from filmguess.player.base import PlayerError
+    from filmguess.player.browser import open_for_login
+
+    print("Inicia sesión en Netflix en la ventana que se abre y elige el perfil.")
+    print("Cuando termines, cierra la ventana: la sesión queda guardada para la app.")
+    try:
+        asyncio.run(
+            open_for_login(
+                config.browser,
+                config.resolve(config.browser.profile_dir),
+                "https://www.netflix.com/login",
+            )
+        )
+    except PlayerError as exc:
+        print(f"Error: {exc.message}")
+        return 1
+    print("Listo.")
     return 0

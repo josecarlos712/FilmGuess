@@ -16,7 +16,10 @@ from filmguess.config import AppConfig
 from filmguess.game.scoreboard import Scoreboard
 from filmguess.game.session import GameSession
 from filmguess.pairing.network import local_ip, pairing_url, qr_text
-from filmguess.player.base import Player, UnavailablePlayer
+from filmguess.player.base import Player
+from filmguess.player.browser import Browser
+from filmguess.player.netflix import NetflixPlayer
+from filmguess.player.overlays import init_script
 from filmguess.server.app import create_app
 
 SCOREBOARD_FILENAME = "scoreboard.json"
@@ -45,11 +48,11 @@ class RedactToken(logging.Filter):
 
 
 def serve(config: AppConfig, player: Player | None = None) -> None:
-    """Arranca el servidor y bloquea hasta que se detiene (Ctrl+C).
+    """Arranca el servidor y el navegador, y bloquea hasta que se detiene (Ctrl+C).
 
     Args:
         config: Configuración de la app (con token).
-        player: Reproductor de la tele; sin él, las órdenes responden ``navegador_cerrado``.
+        player: Reproductor de la tele; por defecto, Netflix en el navegador configurado.
 
     Raises:
         ScoreboardError: Si el marcador guardado está dañado.
@@ -62,7 +65,7 @@ def serve(config: AppConfig, player: Player | None = None) -> None:
     try:
         session = GameSession(
             db,
-            player or UnavailablePlayer(),
+            player or netflix_player(config),
             Scoreboard(data_dir / SCOREBOARD_FILENAME),
             config.random,
         )
@@ -95,3 +98,25 @@ def uvicorn_log_config() -> dict[str, Any]:
     for handler in log_config["handlers"].values():
         handler.setdefault("filters", []).append("redact_token")
     return log_config
+
+
+def netflix_player(config: AppConfig) -> NetflixPlayer:
+    """Reproductor de Netflix con el navegador configurado.
+
+    Args:
+        config: Configuración de la app.
+
+    Returns:
+        El reproductor (el navegador se abre al arrancar el servidor).
+    """
+    browser = Browser(
+        config.browser,
+        config.resolve(config.browser.profile_dir),
+        init_script(config.netflix.selectors),
+    )
+    return NetflixPlayer(
+        browser,
+        idle_url=f"http://127.0.0.1:{config.server.port}/tv",
+        profile_name=config.netflix.profile_name,
+        timeout_s=config.netflix.play_timeout_s,
+    )

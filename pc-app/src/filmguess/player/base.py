@@ -46,6 +46,14 @@ class RevealInfo:
 class Player(Protocol):
     """Operaciones del reproductor (todas asíncronas; el servidor no las solapa)."""
 
+    async def start(self) -> None:
+        """Prepara el reproductor al arrancar el servidor (abre el navegador)."""
+        ...
+
+    async def close(self) -> None:
+        """Libera el reproductor al parar el servidor."""
+        ...
+
     async def status(self) -> PlayerStatus:
         """Estado actual del navegador."""
         ...
@@ -73,6 +81,12 @@ class Player(Protocol):
 
 class UnavailablePlayer:
     """Reproductor de reserva mientras no hay navegador: todas las órdenes fallan con claridad."""
+
+    async def start(self) -> None:
+        """No hay nada que abrir."""
+
+    async def close(self) -> None:
+        """No hay nada que cerrar."""
 
     async def status(self) -> PlayerStatus:
         """Sin navegador.

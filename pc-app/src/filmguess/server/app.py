@@ -6,13 +6,16 @@ Aquí no hay lógica de negocio: las rutas validan la petición, llaman a
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI, Header, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Receive, Scope, Send
 
@@ -24,6 +27,7 @@ from filmguess.pairing.network import (
     qr_svg,
     token_matches,
 )
+from filmguess.player.base import PlayerError
 from filmguess.server import schemas
 from filmguess.server.events import EventHub
 
@@ -51,6 +55,24 @@ ERROR_STATUS: dict[str, int] = {
     "netflix_error": 502,
 }
 """Estado HTTP de cada código de error; los no listados devuelven 500."""
+
+
+TV_PLACEHOLDER = """<!doctype html><html lang="es"><head><meta charset="utf-8">
+<title>Adivina la Peli</title><style>html,body{margin:0;height:100%;background:#0b0b0d;
+color:#f4f1ea;font:600 6vw system-ui,"Segoe UI",sans-serif;display:grid;place-items:center;
+cursor:none}</style></head><body>Adivina la Peli</body></html>"""
+
+
+async def _show_idle_when_ready(session: GameSession, attempts: int = 20) -> None:
+    for _ in range(attempts):
+        await asyncio.sleep(0.5)
+        try:
+            await session.player.idle()
+        except PlayerError as exc:
+            log.debug("Pantalla de espera aún no disponible: %s", exc.message)
+            continue
+        return
+    log.warning("No se pudo abrir la pantalla de espera en el navegador de la tele.")
 
 
 class ApiError(Exception):
@@ -135,7 +157,26 @@ def create_app(session: GameSession, token: str, *, port: int, ip: str) -> FastA
     Returns:
         La aplicación FastAPI.
     """
-    app = FastAPI(title="Adivina la Peli", docs_url=None, redoc_url=None, openapi_url=None)
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        try:
+            await session.player.start()
+        except PlayerError as exc:
+            # El servidor sigue: el móvil verá el error y se reintenta en la siguiente orden.
+            session.last_error = {"error": exc.code, "mensaje": exc.message}
+            log.error("No se pudo preparar el reproductor: %s", exc.message)
+        # La pantalla de espera es una página de este servidor: se abre cuando ya escucha.
+        idle_task = asyncio.create_task(_show_idle_when_ready(session))
+        try:
+            yield
+        finally:
+            idle_task.cancel()
+            await session.player.close()
+
+    app = FastAPI(
+        title="Adivina la Peli", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan
+    )
     hub = EventHub()
     app.state.hub = hub
     app.state.session = session
@@ -255,6 +296,11 @@ def create_app(session: GameSession, token: str, *, port: int, ip: str) -> FastA
     async def post_reset() -> dict[str, Any]:
         await session.reset_points()
         return schemas.scoreboard(session.scoreboard.players)
+
+    @app.get("/tv", dependencies=[Depends(require_localhost)])
+    async def get_tv() -> HTMLResponse:
+        # Provisional hasta F4: pantalla de espera mínima.
+        return HTMLResponse(TV_PLACEHOLDER)
 
     @app.get("/pairing", dependencies=[Depends(require_localhost)])
     async def get_pairing() -> dict[str, Any]:
