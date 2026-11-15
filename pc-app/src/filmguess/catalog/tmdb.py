@@ -187,6 +187,70 @@ class TmdbClient:
             if "id" in r
         ]
 
+    async def watch_providers(self) -> list[dict[str, Any]]:
+        """Plataformas de cine que TMDB conoce en la región del cliente.
+
+        Returns:
+            Elementos de ``/watch/providers/movie`` (``provider_id``, ``provider_name``...).
+
+        Raises:
+            TmdbError: Si la petición falla.
+        """
+        data = await self._get(
+            "/watch/providers/movie", {"watch_region": self.region, "language": self.language}
+        )
+        return [r for r in data.get("results", []) if isinstance(r, dict) and "provider_id" in r]
+
+    async def discover_movies(self, params: dict[str, str]) -> dict[str, Any]:
+        """Una página de ``/discover/movie`` en la región e idioma del cliente.
+
+        Args:
+            params: Filtros adicionales (``with_watch_providers``, ``page``...).
+
+        Returns:
+            JSON con ``results``, ``page``, ``total_pages`` y ``total_results``.
+
+        Raises:
+            TmdbError: Si la petición falla.
+        """
+        query = {
+            "watch_region": self.region,
+            "language": self.language,
+            "include_adult": "false",
+            "sort_by": "popularity.desc",
+        }
+        return await self._get("/discover/movie", query | params)
+
+    async def movie_watch_providers(self, tmdb_id: int) -> dict[str, Any]:
+        """Plataformas en las que está una película, en todos los países.
+
+        Args:
+            tmdb_id: ID de TMDB.
+
+        Returns:
+            JSON de ``/movie/{id}/watch/providers`` (``results`` por país).
+
+        Raises:
+            TmdbNotFoundError: Si TMDB no tiene esa película.
+            TmdbError: Si la petición falla.
+        """
+        return await self._get(f"/movie/{tmdb_id}/watch/providers", {})
+
+    async def movie_external_ids(self, tmdb_id: int) -> dict[str, Any]:
+        """IDs externos de una película (IMDb, Wikidata...).
+
+        Args:
+            tmdb_id: ID de TMDB.
+
+        Returns:
+            JSON de ``/movie/{id}/external_ids``.
+
+        Raises:
+            TmdbNotFoundError: Si TMDB no tiene esa película.
+            TmdbError: Si la petición falla.
+        """
+        return await self._get(f"/movie/{tmdb_id}/external_ids", {})
+
     async def movie_details(self, tmdb_id: int) -> dict[str, Any]:
         """Ficha de una película con IDs externos y proveedores.
 

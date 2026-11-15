@@ -63,13 +63,40 @@ def download_wikidata(
     Raises:
         WikidataError: Si la descarga falla o llega incompleta en todos los intentos.
     """
+    return download_sparql_csv(QUERY, dest, url, timeout, attempts, min_rows)
+
+
+def download_sparql_csv(
+    query: str,
+    dest: Path,
+    url: str = SPARQL_URL,
+    timeout: float = 300,
+    attempts: int = 3,
+    min_rows: int = 0,
+) -> Path:
+    """Ejecuta una consulta SPARQL y guarda la respuesta CSV, reintentando si llega cortada.
+
+    Args:
+        query: Consulta SPARQL.
+        dest: Ruta de destino del CSV.
+        url: Punto de consulta SPARQL.
+        timeout: Segundos máximos de espera por intento.
+        attempts: Intentos como máximo.
+        min_rows: Filas mínimas para dar la respuesta por completa.
+
+    Returns:
+        La ruta descargada.
+
+    Raises:
+        WikidataError: Si la descarga falla o llega incompleta en todos los intentos.
+    """
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(dest.suffix + ".part")
     headers = {"Accept": "text/csv", "User-Agent": USER_AGENT}
     problem = "sin respuesta"
     for _ in range(max(1, attempts)):
         try:
-            response = httpx.get(url, params={"query": QUERY}, headers=headers, timeout=timeout)
+            response = httpx.get(url, params={"query": query}, headers=headers, timeout=timeout)
             response.raise_for_status()
         except httpx.HTTPError as exc:
             problem = str(exc)

@@ -10,6 +10,18 @@ from pathlib import Path
 from filmguess.catalog.db import CatalogDB
 from filmguess.catalog.imdb import apply_ratings, download_ratings
 from filmguess.catalog.importer import ImportProgress, enrich_pending, ingest_csv, ingest_wikidata
+from filmguess.catalog.platforms import (
+    ALL_KINDS,
+    SUBSCRIPTION_KINDS,
+    HarvestProgress,
+    HarvestSummary,
+    PlatformsDB,
+    apply_imdb_ratings,
+    export_csv,
+    fill_imdb_ids,
+    harvest,
+)
+from filmguess.catalog.platforms import ProgressCallback as HarvestCallback
 from filmguess.catalog.tmdb import TmdbClient
 from filmguess.catalog.wikidata import download_wikidata
 from filmguess.config import AppConfig
@@ -17,6 +29,7 @@ from filmguess.config import AppConfig
 DB_FILENAME = "catalogo.sqlite"
 IMDB_FILENAME = "title.ratings.tsv.gz"
 WIKIDATA_FILENAME = "wikidata_netflix.csv"
+PLATFORMS_FILENAME = "plataformas.sqlite"
 
 
 def db_path(config: AppConfig) -> Path:
@@ -140,3 +153,137 @@ async def _enrich(
         config.tmdb.api_key, language=config.tmdb.language, region=config.tmdb.region
     ) as client:
         return await enrich_pending(db, client, limit=limit, on_progress=on_progress)
+
+
+def platforms_db_path(config: AppConfig) -> Path:
+    """Ruta del catálogo multiplataforma (separado del catálogo del juego).
+
+    Args:
+        config: Configuración de la app.
+
+    Returns:
+        Ruta absoluta.
+    """
+    return config.resolve(config.catalog.data_dir) / PLATFORMS_FILENAME
+
+
+def run_harvest(
+    config: AppConfig,
+    *,
+    wikidata: bool = True,
+    check: bool = True,
+    check_limit: int | None = None,
+    recheck: bool = False,
+    on_progress: HarvestCallback | None = None,
+) -> tuple[HarvestSummary, list[tuple[str, str, int]]]:
+    """Descarga el catálogo de todas las plataformas de la región configurada.
+
+    Args:
+        config: Configuración de la app.
+        wikidata: Si se descargan los IDs propios de cada plataforma.
+        check: Si se comprueba la disponibilidad exacta de cada película.
+        check_limit: Máximo de películas a comprobar en esta ejecución.
+        recheck: Si se vuelven a comprobar también las ya comprobadas.
+        on_progress: Progreso de cada fase.
+
+    Returns:
+        El resumen y las películas por plataforma y tipo de oferta.
+
+    Raises:
+        TmdbError: Si TMDB rechaza la clave o falla de forma continuada.
+    """
+    db = PlatformsDB(platforms_db_path(config))
+    try:
+        if recheck:
+            db.reset_checks()
+        summary = asyncio.run(_harvest(db, config, wikidata, check, check_limit, on_progress))
+        return summary, db.stats()
+    finally:
+        db.close()
+
+
+async def _harvest(
+    db: PlatformsDB,
+    config: AppConfig,
+    wikidata: bool,
+    check: bool,
+    check_limit: int | None,
+    on_progress: HarvestCallback | None,
+) -> HarvestSummary:
+    async with TmdbClient(
+        config.tmdb.api_key, language=config.tmdb.language, region=config.tmdb.region
+    ) as client:
+        return await harvest(
+            db,
+            client,
+            cache_dir=config.resolve(config.catalog.data_dir),
+            wikidata=wikidata,
+            check=check,
+            check_limit=check_limit,
+            on_progress=on_progress,
+        )
+
+
+@dataclass(slots=True)
+class PlatformExport:
+    """Resultado de :func:`run_platform_export`."""
+
+    rows: int = 0
+    imdb_lookups: int = 0
+    imdb_rated: int | None = None
+    imdb_missing: bool = False
+
+
+def run_platform_export(
+    config: AppConfig,
+    dest: Path,
+    *,
+    lookup_ids: bool = True,
+    download_imdb: bool = False,
+    subscription_only: bool = False,
+    on_progress: HarvestCallback | None = None,
+) -> PlatformExport:
+    """Añade valoraciones de IMDb al catálogo multiplataforma y lo exporta a CSV.
+
+    Args:
+        config: Configuración de la app.
+        dest: Ruta del CSV.
+        lookup_ids: Si se piden a TMDB los IMDb ID que falten.
+        download_imdb: Si se descarga antes el fichero de valoraciones de IMDb.
+        subscription_only: Solo suscripción, gratis y con anuncios (sin alquiler ni compra).
+        on_progress: Progreso de la consulta de IDs.
+
+    Returns:
+        Resumen de lo hecho.
+
+    Raises:
+        TmdbError: Si TMDB rechaza la clave o falla de forma continuada.
+        ImdbError: Si la descarga o lectura de IMDb falla.
+        OSError: Si no se puede escribir el CSV.
+    """
+    result = PlatformExport()
+    db = PlatformsDB(platforms_db_path(config))
+    try:
+        if lookup_ids:
+            result.imdb_lookups = asyncio.run(_fill_ids(db, config, on_progress)).done
+        ratings = imdb_path(config)
+        if download_imdb:
+            download_ratings(ratings)
+        if ratings.exists():
+            result.imdb_rated = apply_imdb_ratings(db, ratings)
+        else:
+            result.imdb_missing = True
+        kinds = SUBSCRIPTION_KINDS if subscription_only else ALL_KINDS
+        result.rows = export_csv(db, dest, kinds=kinds)
+    finally:
+        db.close()
+    return result
+
+
+async def _fill_ids(
+    db: PlatformsDB, config: AppConfig, on_progress: HarvestCallback | None
+) -> HarvestProgress:
+    async with TmdbClient(
+        config.tmdb.api_key, language=config.tmdb.language, region=config.tmdb.region
+    ) as client:
+        return await fill_imdb_ids(db, client, on_progress=on_progress)

@@ -9,7 +9,13 @@ from pathlib import Path
 from filmguess.catalog.csv_source import CsvSourceError
 from filmguess.catalog.imdb import ImdbError
 from filmguess.catalog.importer import ImportProgress
-from filmguess.catalog.service import ImportOptions, run_import
+from filmguess.catalog.platforms import HarvestProgress
+from filmguess.catalog.service import (
+    ImportOptions,
+    run_harvest,
+    run_import,
+    run_platform_export,
+)
 from filmguess.catalog.tmdb import TmdbError
 from filmguess.catalog.wikidata import WikidataError
 from filmguess.config import DEFAULT_CONFIG_PATH, AppConfig, ConfigError, load_config
@@ -50,6 +56,43 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="descarga antes title.ratings.tsv.gz de IMDb (unos 8 MB)",
     )
+    plat = sub.add_parser(
+        "plataformas",
+        help="descarga aparte el catálogo de todas las plataformas del país (TMDB y Wikidata)",
+    )
+    plat.add_argument("--sin-wikidata", action="store_true", help="no descarga IDs de Wikidata")
+    plat.add_argument(
+        "--sin-comprobar",
+        action="store_true",
+        help="solo enumera; no comprueba la disponibilidad exacta de cada película",
+    )
+    plat.add_argument("--limite", type=int, default=None, help="máximo de películas a comprobar")
+    plat.add_argument(
+        "--recomprobar", action="store_true", help="vuelve a comprobar también las ya comprobadas"
+    )
+    exp = sub.add_parser(
+        "exportar-plataformas",
+        help="añade valoraciones de IMDb al catálogo multiplataforma y lo exporta a CSV",
+    )
+    exp.add_argument(
+        "--salida",
+        type=Path,
+        default=None,
+        help="ruta del CSV (por defecto data/peliculas_espana.csv)",
+    )
+    exp.add_argument(
+        "--descargar-imdb",
+        action="store_true",
+        help="descarga antes title.ratings.tsv.gz de IMDb (unos 8 MB)",
+    )
+    exp.add_argument(
+        "--sin-buscar-ids", action="store_true", help="no pide a TMDB los IMDb ID que falten"
+    )
+    exp.add_argument(
+        "--solo-suscripcion",
+        action="store_true",
+        help="solo suscripción, gratis y con anuncios (sin alquiler ni compra)",
+    )
     sub.add_parser("config", help="muestra la configuración efectiva")
     return parser
 
@@ -80,6 +123,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if command == "importar":
         return _cmd_import(config, args)
+    if command == "plataformas":
+        return _cmd_platforms(config, args)
+    if command == "exportar-plataformas":
+        return _cmd_export_platforms(config, args)
 
     print(f"El comando «{command}» todavía no está implementado.")
     return 1
@@ -124,4 +171,63 @@ def _cmd_import(config: AppConfig, args: argparse.Namespace) -> int:
         print(f"IMDb: {summary.imdb_updated} valoraciones aplicadas.")
     elif summary.imdb_missing:
         print("IMDb: no hay fichero de valoraciones; usa --descargar-imdb para obtenerlo.")
+    return 0
+
+
+def _cmd_platforms(config: AppConfig, args: argparse.Namespace) -> int:
+    def progress(p: HarvestProgress) -> None:
+        if p.stage != "disponibilidad" or p.done % 500 == 0 or p.done == p.total:
+            print(f"  {p.stage} {p.done}/{p.total} · errores {p.errors}", flush=True)
+
+    try:
+        summary, stats = run_harvest(
+            config,
+            wikidata=not args.sin_wikidata,
+            check=not args.sin_comprobar,
+            check_limit=args.limite,
+            recheck=args.recomprobar,
+            on_progress=progress,
+        )
+    except TmdbError as exc:
+        print(f"Error en la descarga: {exc}")
+        return 1
+
+    print(
+        f"Plataformas: {summary.providers} · resultados enumerados: {summary.discovered} · "
+        f"comprobadas: {summary.checked} (errores {summary.check_errors})"
+    )
+    for platform, n in sorted(summary.external_ids.items()):
+        print(f"  Wikidata {platform}: {n} IDs")
+    for platform, error in sorted(summary.wikidata_errors.items()):
+        print(f"  Wikidata {platform}: error: {error}")
+    print("Películas por plataforma (tipo de oferta):")
+    for name, kind, n in stats[:40]:
+        print(f"  {n:6d}  {name} ({kind})")
+    return 0
+
+
+def _cmd_export_platforms(config: AppConfig, args: argparse.Namespace) -> int:
+    def progress(p: HarvestProgress) -> None:
+        if p.done % 1000 == 0 or p.done == p.total:
+            print(f"  {p.stage} {p.done}/{p.total} · errores {p.errors}", flush=True)
+
+    dest = args.salida or config.resolve(config.catalog.data_dir) / "peliculas_espana.csv"
+    try:
+        result = run_platform_export(
+            config,
+            dest,
+            lookup_ids=not args.sin_buscar_ids,
+            download_imdb=args.descargar_imdb,
+            subscription_only=args.solo_suscripcion,
+            on_progress=progress,
+        )
+    except (TmdbError, ImdbError, OSError) as exc:
+        print(f"Error en la exportación: {exc}")
+        return 1
+
+    if result.imdb_rated is not None:
+        print(f"IMDb: {result.imdb_rated} películas con valoración.")
+    elif result.imdb_missing:
+        print("IMDb: no hay fichero de valoraciones; usa --descargar-imdb para obtenerlo.")
+    print(f"CSV: {result.rows} filas en {dest}")
     return 0
