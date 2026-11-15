@@ -6,7 +6,12 @@ import argparse
 from collections.abc import Sequence
 from pathlib import Path
 
-from filmguess.config import DEFAULT_CONFIG_PATH, ConfigError, load_config
+from filmguess.catalog.csv_source import CsvSourceError
+from filmguess.catalog.imdb import ImdbError
+from filmguess.catalog.importer import ImportProgress
+from filmguess.catalog.service import ImportOptions, run_import
+from filmguess.catalog.tmdb import TmdbError
+from filmguess.config import DEFAULT_CONFIG_PATH, AppConfig, ConfigError, load_config
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -27,7 +32,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(dest="command", metavar="comando")
     sub.add_parser("servir", help="arranca el servidor y el navegador (por defecto)")
-    sub.add_parser("importar", help="importa o actualiza el catálogo desde el CSV y TMDB")
+    imp = sub.add_parser("importar", help="importa o actualiza el catálogo desde el CSV y TMDB")
+    imp.add_argument("--limite", type=int, default=None, help="máximo de películas a enriquecer")
+    imp.add_argument("--sin-tmdb", action="store_true", help="solo carga el CSV, sin TMDB")
+    imp.add_argument("--sin-imdb", action="store_true", help="no aplica valoraciones de IMDb")
+    imp.add_argument(
+        "--descargar-imdb",
+        action="store_true",
+        help="descarga antes title.ratings.tsv.gz de IMDb (unos 8 MB)",
+    )
     sub.add_parser("config", help="muestra la configuración efectiva")
     return parser
 
@@ -56,5 +69,41 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(shown.model_dump_json(indent=2))
         return 0
 
+    if command == "importar":
+        return _cmd_import(config, args)
+
     print(f"El comando «{command}» todavía no está implementado.")
     return 1
+
+
+def _cmd_import(config: AppConfig, args: argparse.Namespace) -> int:
+    options = ImportOptions(
+        tmdb=not args.sin_tmdb,
+        imdb=not args.sin_imdb,
+        download_imdb=args.descargar_imdb,
+        limit=args.limite,
+    )
+
+    def progress(p: ImportProgress) -> None:
+        if p.done % 50 == 0 or p.done == p.total:
+            print(
+                f"  TMDB {p.done}/{p.total} · emparejadas {p.matched} · "
+                f"sin coincidencia {p.no_match} · errores {p.errors}",
+                flush=True,
+            )
+
+    try:
+        summary = run_import(config, options, progress)
+    except (CsvSourceError, TmdbError, ImdbError) as exc:
+        print(f"Error en la importación: {exc}")
+        return 1
+
+    print(f"CSV: {summary.csv_added} películas nuevas.")
+    if summary.tmdb is not None:
+        t = summary.tmdb
+        print(f"TMDB: {t.matched} emparejadas, {t.no_match} sin coincidencia, {t.errors} errores.")
+    if summary.imdb_updated is not None:
+        print(f"IMDb: {summary.imdb_updated} valoraciones aplicadas.")
+    elif summary.imdb_missing:
+        print("IMDb: no hay fichero de valoraciones; usa --descargar-imdb para obtenerlo.")
+    return 0

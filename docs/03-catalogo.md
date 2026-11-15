@@ -6,7 +6,7 @@
 
 ## Proceso de importación
 
-Se ejecuta con `python -m filmguess.catalog.importar` (o con el botón del panel). Se puede **reanudar**: guarda el progreso fila a fila y vuelve a empezar donde se quedó.
+Se ejecuta con `arrancar.bat importar` (o con el botón del panel). Opciones: `--limite N` (enriquecer solo N películas), `--sin-tmdb` (solo cargar el CSV), `--sin-imdb` y `--descargar-imdb` (descarga antes el fichero de valoraciones). Se puede **reanudar**: guarda el progreso fila a fila y vuelve a empezar donde se quedó.
 
 1. **Cargar el CSV** con el módulo `csv` (respeta las comillas). Descarta filas con un ID no numérico o repetido.
 2. **Buscar en TMDB**: `GET /search/movie?query=<nombre>&language=es-ES&include_adult=false`.
