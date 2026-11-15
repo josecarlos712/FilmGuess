@@ -103,6 +103,15 @@ def client(session: GameSession) -> TestClient:
 # --- Seguridad --------------------------------------------------------------------
 
 
+def test_la_web_del_movil_no_se_queda_en_cache(client: TestClient) -> None:
+    page = client.get("/m/")
+    script = client.get("/m/app.js")
+
+    assert page.headers["cache-control"] == "no-cache"
+    assert script.headers["cache-control"] == "no-cache"
+    assert client.get("/version").json()["version"].isdigit()
+
+
 def test_sin_token_devuelve_error_en_espanol(client: TestClient) -> None:
     response = client.get("/status")
 
@@ -393,7 +402,7 @@ def test_movil_se_sirve_en_la_red_local(client: TestClient) -> None:
 
     page = client.get("/m/")
     assert page.status_code == 200
-    assert '<script type="module" src="app.js">' in page.text
+    assert '<script type="module" src="app.js?v=3">' in page.text
     for name in ("app.js", "api.js", "wheel.js", "textos.js", "app.css"):
         assert client.get(f"/m/{name}").status_code == 200, name
 

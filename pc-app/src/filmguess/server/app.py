@@ -12,6 +12,7 @@ import json
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Annotated, Any, Literal
 
 from fastapi import Depends, FastAPI, Header, Query, Request, WebSocket, WebSocketDisconnect
@@ -157,6 +158,30 @@ class LocalNetworkOnly:
                 await send({"type": "http.response.body", "body": body})
                 return
         await self.app(scope, receive, send)
+
+
+class FreshStaticFiles(StaticFiles):
+    """Ficheros estáticos que el navegador debe revalidar siempre.
+
+    Sin esta cabecera, el móvil sigue usando su copia guardada tras actualizar la app.
+    """
+
+    def file_response(self, *args: Any, **kwargs: Any) -> Response:
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
+def files_version(directory: Path) -> str:
+    """Huella de una carpeta de ficheros web: cambia cuando cambia cualquiera de ellos.
+
+    Args:
+        directory: Carpeta servida.
+
+    Returns:
+        La fecha de modificación más reciente, como texto.
+    """
+    return str(max((f.stat().st_mtime_ns for f in directory.rglob("*") if f.is_file()), default=0))
 
 
 def create_app(
@@ -484,7 +509,11 @@ def create_app(
     async def mobile_redirect() -> RedirectResponse:
         return RedirectResponse("/m/")
 
-    app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
-    app.mount("/m", StaticFiles(directory=MOBILE_DIR, html=True), name="mobile")
+    @app.get("/version", include_in_schema=False)
+    async def get_version() -> dict[str, str]:
+        return {"version": files_version(MOBILE_DIR)}
+
+    app.mount("/static", FreshStaticFiles(directory=WEB_DIR), name="static")
+    app.mount("/m", FreshStaticFiles(directory=MOBILE_DIR, html=True), name="mobile")
     app.add_middleware(LocalNetworkOnly)
     return app

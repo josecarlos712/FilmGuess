@@ -1,5 +1,19 @@
 // Cliente de la API del PC: cabecera X-Token, errores en español y WebSocket de estado.
-import { TEXTOS } from "./textos.js";
+import { TEXTOS } from "./textos.js?v=3";
+
+// Si el PC tiene una versión nueva de esta página, se recarga sola al reconectar.
+let seenVersion = null;
+async function reloadIfUpdated() {
+  try {
+    const res = await fetch("/version", { cache: "no-store" });
+    if (!res.ok) return;
+    const { version } = await res.json();
+    if (seenVersion && version !== seenVersion) location.reload();
+    seenVersion = version;
+  } catch {
+    // Sin conexión: se comprobará en la siguiente reconexión.
+  }
+}
 
 const STORAGE_KEY = "fg-token";
 
@@ -118,6 +132,7 @@ export function createApi(token) {
         const proto = location.protocol === "https:" ? "wss" : "ws";
         ws = new WebSocket(`${proto}://${location.host}/ws?token=${encodeURIComponent(token)}`);
         ws.addEventListener("open", () => {
+          reloadIfUpdated();
           retry = 500;
           onConnection(true);
         });

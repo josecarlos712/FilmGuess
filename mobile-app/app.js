@@ -1,7 +1,7 @@
 // Mando del móvil: conexión, buscador, rueda de tiempo, ronda, marcador y jugadores.
-import { ApiError, createApi, forgetToken, initialToken, rememberToken } from "./api.js";
-import { TEXTOS } from "./textos.js";
-import { createWheel, hms } from "./wheel.js";
+import { ApiError, createApi, forgetToken, initialToken, rememberToken } from "./api.js?v=3";
+import { TEXTOS } from "./textos.js?v=3";
+import { createWheel, hms } from "./wheel.js?v=3";
 
 const $ = (id) => document.getElementById(id);
 
