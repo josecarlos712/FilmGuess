@@ -22,7 +22,7 @@ POINTS_FREE = 5
 POINTS_CATEGORY = 3
 MIN_POINTS = 1
 MAX_FRAMES = 3
-CLIP_SECONDS = 5
+CLIP_SECONDS = 10
 MOMENT_MARGIN = 0.05
 """Los fotogramas al azar evitan el 5 % del principio y el 10 % del final (créditos)."""
 MOMENT_TAIL = 0.10

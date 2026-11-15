@@ -143,7 +143,7 @@ IMDb no tiene API de críticas y prohíbe extraerlas de su web, por eso la crít
 - Sin categoría: 5 puntos y pistas género → año y nota IMDb → actor → personaje → frase.
 - Con categoría (`categoria` en `/play`): el género se sabe gratis, 3 puntos y pistas año y nota → protagonista y personaje → frase.
 - Cada pista resta 1 punto, mínimo 1. Las pistas sin datos se omiten.
-- Gratis: hasta 3 fotogramas (`/frame`, al azar entre el 5 % y el 90 % de la duración y a más de un 10 % de los ya vistos) y un clip de 5 s (`/clip`).
+- Gratis: hasta 3 fotogramas (`/frame`, al azar entre el 5 % y el 90 % de la duración y a más de un 10 % de los ya vistos) y un clip de 10 s (`/clip`).
 - `/skip` tapa la tele al instante («Saltando escena…»), corta el clip y cambia a otro momento sin gastar fotograma.
 - Tras `/reveal`, `/award` da el valor de la ronda a cada acertante una sola vez.
 
@@ -156,7 +156,7 @@ IMDb no tiene API de críticas y prohíbe extraerlas de su web, por eso la crít
 | `POST /play` `{netflixId, seconds, categoria?}` | Empieza la ronda (422 `categoria_no_coincide`) |
 | `POST /hint` | Siguiente pista (409 `sin_pistas`, `ronda_cerrada`) |
 | `POST /frame` | Otro fotograma (409 `sin_fotogramas`) |
-| `POST /clip` | Clip de 5 s (409 `clip_usado`) |
+| `POST /clip` | Clip de 10 s (409 `clip_usado`) |
 | `POST /skip` | Saltar escena |
 | `POST /award` `{jugadores: [id]}` | Reparte los puntos (409 `sin_revelar`) |
 

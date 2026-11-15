@@ -20,7 +20,7 @@ Juego de salón: desde el móvil se elige una película del catálogo de Netflix
    | 4. Su personaje | 3. Frase célebre, crítica, sinopsis o director (gratis) |
    | 5. Frase célebre, crítica, sinopsis o director (gratis) | |
 
-   Gratis en cualquier momento: **otros dos fotogramas** al azar (tres en total) y un **clip de 5 segundos**. Si sale una escena delicada, **Saltar escena** tapa la tele al instante y cambia a otro momento sin gastar fotograma.
+   Gratis en cualquier momento: **otros dos fotogramas** al azar (tres en total) y un **clip de 10 segundos**. Si sale una escena delicada, **Saltar escena** tapa la tele al instante y cambia a otro momento sin gastar fotograma.
 6. **Revelar el título** termina la ronda: marca quién ha acertado y pulsa «Dar los puntos». El marcador se ve en la tele y se guarda entre partidas; «Corregir puntos a mano» permite ajustarlo.
 7. **Jugadores**: añade, renombra o quita jugadores y pon el marcador a cero.
 

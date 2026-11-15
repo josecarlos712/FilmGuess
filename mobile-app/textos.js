@@ -56,7 +56,7 @@ export const TEXTOS = {
   darPista: (n, total, cuesta) => `Dar pista ${n} de ${total} · ${cuesta ? "−1 punto" : "gratis"}`,
   sinPistas: "No quedan pistas",
   otroFotograma: (n, max) => (n >= max ? "Sin fotogramas" : "Otro fotograma"),
-  clip: "Clip de 5 s",
+  clip: "Clip de 10 s",
   saltar: "Saltar escena",
   quienAcerto: (n) => `¿Quién ha acertado? Se lleva ${n === 1 ? "1 punto" : `${n} puntos`}.`,
   darPuntos: "Dar los puntos",

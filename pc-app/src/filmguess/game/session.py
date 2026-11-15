@@ -313,14 +313,14 @@ class GameSession:
         return actual
 
     async def clip(self) -> None:
-        """Reproduce 5 segundos desde el fotograma actual y vuelve a pausar (una vez).
+        """Reproduce 10 segundos desde el fotograma actual y vuelve a pausar (una vez).
 
         Raises:
             GameError: Si no hay ronda, el clip ya se usó o el reproductor falla.
         """
         current = self._require_playing()
         if current.clip_used:
-            raise GameError("clip_usado", "El clip de 5 segundos ya se ha visto en esta ronda.")
+            raise GameError("clip_usado", "El clip de 10 segundos ya se ha visto en esta ronda.")
         await self._run("clip", self.player.resume())
         current.clip_used = True
         self._clip = asyncio.create_task(self._end_clip(current))
