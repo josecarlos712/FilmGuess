@@ -128,8 +128,26 @@ def main(argv: Sequence[str] | None = None) -> int:
     if command == "exportar-plataformas":
         return _cmd_export_platforms(config, args)
 
-    print(f"El comando «{command}» todavía no está implementado.")
+    if command == "servir":
+        return _cmd_serve(config)
+
+    print(f"El comando «{command}» no existe.")
     return 1
+
+
+def _cmd_serve(config: AppConfig) -> int:
+    from filmguess.game.scoreboard import ScoreboardError
+    from filmguess.server.run import serve
+
+    try:
+        serve(config)
+    except ScoreboardError as exc:
+        print(f"Error en el marcador: {exc.message}")
+        return 1
+    except OSError as exc:
+        print(f"No se pudo arrancar el servidor en el puerto {config.server.port}: {exc}")
+        return 1
+    return 0
 
 
 def _cmd_import(config: AppConfig, args: argparse.Namespace) -> int:

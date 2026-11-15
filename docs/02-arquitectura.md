@@ -76,12 +76,19 @@ Todas las rutas (salvo `/m/` estática, `/panel` y `/tv`) exigen la cabecera `X-
 | POST | `/pause` · `/resume` | — | `{ok}` |
 | POST | `/reveal` | — | `{ok, titulo}` |
 | POST | `/idle` | — | `{ok}` |
-| GET/POST | `/players` | alta, baja y puntos de jugadores | marcador |
-| WS | `/ws?token=` | — | eventos `estado`, `error`, `marcador` |
+| GET | `/players` | — | marcador `{jugadores: [{id, nombre, puntos}]}`, de más a menos puntos |
+| POST | `/players` | `{nombre}` | alta; marcador |
+| DELETE | `/players/{id}` | — | baja; marcador |
+| POST | `/players/{id}/points` | `{puntos}` (negativo para restar) | marcador |
+| POST | `/players/reset` | — | todos a cero; marcador |
+| GET | `/pairing` · `/pairing/qr.svg` | — (solo localhost, sin token) | URL de emparejamiento y su QR |
+| WS | `/ws?token=` | — | al conectar, `estado` y `marcador`; después, eventos `estado`, `error`, `marcador` como `{tipo, datos}` |
 | POST | `/admin/movies` | `{url}` (solo localhost) | alta por enlace (D5) |
 | PATCH | `/admin/movies/{id}` | corrección del emparejamiento TMDB (solo localhost) | ficha |
 
-Códigos de error previstos: `token_invalido`, `no_encontrada`, `no_disponible_es`, `perfil_requerido`, `sesion_caducada`, `tiempo_agotado`, `fuera_de_duracion`, `navegador_cerrado`, `netflix_error`.
+Códigos de error previstos: `token_invalido`, `no_encontrada`, `no_disponible_es`, `perfil_requerido`, `sesion_caducada`, `tiempo_agotado`, `fuera_de_duracion`, `navegador_cerrado`, `netflix_error`. Añadidos en F2: `red_no_permitida`, `solo_local`, `peticion_invalida`, `ruta_no_encontrada`, `sin_ronda`, `sin_candidatas`, `nombre_invalido`, `nombre_repetido`, `demasiados_jugadores`, `jugador_no_encontrado` y `marcador_danado`. El estado HTTP de cada uno está en `server/app.py` (`ERROR_STATUS`).
+
+En los registros de la consola el token se sustituye por `****` (el WebSocket lo recibe en la URL).
 
 ## Seguridad
 
