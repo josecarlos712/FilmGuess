@@ -240,6 +240,21 @@ async def test_error_de_netflix_incluye_el_codigo() -> None:
         await player.play(1, 10)
 
 
+async def test_error_de_netflix_recarga_una_vez() -> None:
+    page = FakePage([{"kind": "error", "code": None, "message": "Algo ha fallado"}, ready(10)])
+    player, _ = make(page)
+
+    assert await player.play(1, 10) == pytest.approx(10)
+    assert len(page.urls) == 2
+
+
+async def test_error_de_netflix_sin_codigo_incluye_el_texto() -> None:
+    player, _ = make(FakePage([{"kind": "error", "code": None, "message": "Algo  ha	fallado"}]))
+
+    with pytest.raises(PlayerError, match=r"sin código.*«Algo ha fallado»"):
+        await player.play(1, 10)
+
+
 async def test_pagina_que_no_carga() -> None:
     page = FakePage([ready(0)])
 

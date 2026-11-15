@@ -35,6 +35,9 @@ WATCH_OK = """<!doctype html><html><body>
 UNAVAILABLE = """<!doctype html><html><body><div class="nfp-fatal-error-view">
 Este título no está disponible en tu país. Código M7111-1331</div></body></html>"""
 
+SITE_ERROR = """<!doctype html><html><body><div class="nfp-fatal-error-view">
+Se ha producido un error inesperado. Vuelve a cargar la página. NSES-500</div></body></html>"""
+
 LOGGED_OUT = """<!doctype html><html><body><header>
 <a href="/es/login" data-uia="header-login-link">Iniciar sesión</a></header>
 <h1>Morir todavía</h1></body></html>"""
@@ -51,6 +54,8 @@ async def fake_netflix(route: Route) -> None:
         body = WATCH_OK
     elif "/watch/2" in url:
         body = UNAVAILABLE
+    elif "/watch/5" in url:
+        body = SITE_ERROR
     elif "/watch/3" in url:
         body = PROFILES
     elif "/watch/4" in url:
@@ -124,6 +129,13 @@ async def test_no_disponible(player: NetflixPlayer) -> None:
     with pytest.raises(PlayerError) as exc:
         await player.play(2, 10)
     assert exc.value.code == "no_disponible_es"
+
+
+async def test_error_de_netflix_con_codigo_de_letras(player: NetflixPlayer) -> None:
+    with pytest.raises(PlayerError) as exc:
+        await player.play(5, 10)
+    assert exc.value.code == "netflix_error"
+    assert "NSES-500" in exc.value.message and "error inesperado" in exc.value.message
 
 
 async def test_elige_perfil_por_nombre_sin_acentos_ni_mayusculas(player: NetflixPlayer) -> None:

@@ -16,6 +16,7 @@ LOGIN_URL = "https://www.netflix.com/login"
 TOLERANCE_S = 2.0
 POLL_S = 0.15
 MAX_REDIRECTS = 2
+ERROR_TEXT_MAX = 120
 CALL_JS = """([name, arg]) => {
   if (!window.__fg) return { __missing: true };
   return window.__fg[name](arg);
@@ -255,6 +256,7 @@ class NetflixPlayer:
     async def _wait_ready(self, page: PageLike, url: str, deadline: float) -> dict[str, Any]:
         redirects = 0
         chose_profile = False
+        retried_error = False
         while True:
             state = await self._state(page)
             kind = state.get("kind")
@@ -289,7 +291,20 @@ class NetflixPlayer:
                 )
             elif kind == "error":
                 code = state.get("code") or "sin código"
-                raise PlayerError("netflix_error", f"Netflix muestra un error ({code}).")
+                message = " ".join(str(state.get("message") or "").split())
+                log.warning(
+                    "Netflix muestra un error (%s) en %s: %s",
+                    code,
+                    page.url,
+                    message or "(sin texto)",
+                )
+                if not retried_error:
+                    # Muchos errores de Netflix son pasajeros: se recarga una vez.
+                    retried_error = True
+                    await self._goto(page, url)
+                else:
+                    detail = f": «{message[:ERROR_TEXT_MAX]}»" if message else "."
+                    raise PlayerError("netflix_error", f"Netflix muestra un error ({code}){detail}")
             elif kind == "elsewhere":
                 # Tras elegir perfil, Netflix a veces lleva a la portada: se vuelve a pedir.
                 redirects += 1

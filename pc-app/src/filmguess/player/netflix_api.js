@@ -93,7 +93,8 @@
     const err = q(S.errorView);
     if (err && visible(err)) {
       const msg = text(err).slice(0, 300);
-      const code = (msg.match(/\b[A-Z]{1,3}-?\d{3,5}(-\d+)?\b/) || [null])[0];
+      // M7111-1331, NSES-500, NW-1-19, TVQ-PM-100, UI-800-3…
+      const code = (msg.match(/\b[A-Z]{1,5}(?:-[A-Z]{1,5})?-?\d+(?:-[A-Z0-9]+)*\b/) || [null])[0];
       const unavailable = unavailableRe.test(msg) || unavailableRe.test(norm(msg));
       return { kind: unavailable ? "unavailable" : "error", message: msg, code };
     }
