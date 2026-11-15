@@ -87,7 +87,7 @@ python -m venv .venv
    arrancar.bat pistas
    ```
 
-   Las frases salen de Wikiquote (muchas en inglés); si no hay, una crítica de TMDB o el eslogan. En las pistas se tapa cualquier palabra del título.
+   Las frases salen de Wikiquote; si no hay, una crítica de TMDB o el eslogan. En las pistas se tapa cualquier palabra del título. Las que llegan en inglés se muestran en español gracias a `data/traducciones.json` (texto original + traducción), que se reutiliza en cada descarga mientras el original no cambie. Para traducir textos nuevos: `arrancar.bat pistas --exportar-sin-traducir pendientes.json`, añade sus traducciones al fichero y aplica con `arrancar.bat pistas --aplicar-traducciones`.
 
 ### 5. Primer inicio de sesión en Netflix
 
@@ -127,7 +127,7 @@ arrancar.bat
 |---|---|
 | `arrancar.bat` | Arranca el servidor y el navegador de la tele (igual que `arrancar.bat servir`) |
 | `arrancar.bat importar` | Importa o actualiza el catálogo (`--limite N`, `--sin-tmdb`, `--sin-imdb`, `--descargar-imdb`, `--descargar-wikidata`) |
-| `arrancar.bat pistas` | Descarga las pistas del catálogo de juego (`--todas` para rehacerlas, `--limite N`) |
+| `arrancar.bat pistas` | Descarga las pistas del catálogo de juego (`--todas` para rehacerlas, `--limite N`, `--exportar-sin-traducir FICHERO`, `--aplicar-traducciones`) |
 | `arrancar.bat netflix-login` | Abre el perfil de la app para iniciar sesión en Netflix |
 | `arrancar.bat plataformas` / `exportar-plataformas` | Catálogo de todas las plataformas en España y su CSV (estudio aparte) |
 | `arrancar.bat config` | Muestra la configuración efectiva (sin la clave) |

@@ -22,8 +22,6 @@ from typing import Any, Literal
 QuoteSource = Literal["wikiquote", "critica", "eslogan"]
 
 MASK = "…"
-SPEAKER = re.compile(r"^[A-ZÁÉÍÓÚÑ][\w .'-]{0,30}:\s+")
-"""Nombre de quien habla al principio de una cita («Colonel Bagley: …»)."""
 QUOTE_MIN = 25
 QUOTE_MAX = 220
 REVIEW_MAX = 240
@@ -291,7 +289,7 @@ def extract_quote(wikitext: str, words: Sequence[str]) -> str | None:
             continue
         if not line.startswith("*") or line.startswith("**") or line.startswith("*:"):
             continue
-        quote = SPEAKER.sub("", clean_wikitext(line[1:]))
+        quote = clean_wikitext(line[1:])
         if not QUOTE_MIN <= len(quote) <= QUOTE_MAX:
             continue
         masked = redact(quote, words)

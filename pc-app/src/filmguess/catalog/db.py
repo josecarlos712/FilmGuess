@@ -503,6 +503,32 @@ class CatalogDB:
         genres = [Genre(int(g["id"]), str(g["name"])) for g in json.loads(row[0] or "[]")]
         return Clues(genres, row[1], row[2], row[3], row[4], row[5])
 
+    def untranslated_quotes(self) -> list[tuple[int, str]]:
+        """Frases y críticas guardadas que no están en español.
+
+        Returns:
+            Pares (ID de Netflix, texto).
+        """
+        rows = self._conn.execute(
+            "SELECT netflix_id, quote FROM clues "
+            "WHERE quote IS NOT NULL AND COALESCE(quote_lang, '') <> 'es' ORDER BY netflix_id"
+        ).fetchall()
+        return [(int(r[0]), str(r[1])) for r in rows]
+
+    def set_quote(self, netflix_id: int, quote: str, lang: str) -> None:
+        """Sustituye el texto de la última pista (por ejemplo, por su traducción).
+
+        Args:
+            netflix_id: ID de Netflix.
+            quote: Texto nuevo.
+            lang: Idioma del texto.
+        """
+        with self._conn:
+            self._conn.execute(
+                "UPDATE clues SET quote = ?, quote_lang = ? WHERE netflix_id = ?",
+                (quote, lang, netflix_id),
+            )
+
     def genre_counts(self) -> list[tuple[Genre, int]]:
         """Géneros del catálogo de juego con cuántas películas disponibles tienen.
 

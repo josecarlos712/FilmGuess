@@ -136,6 +136,8 @@ Solo para el catálogo de juego (`netflix_es = 1` con ID de TMDB), en la tabla `
 
 IMDb no tiene API de críticas y prohíbe extraerlas de su web, por eso la crítica sale de TMDB. Cualquier aparición del título se tapa con «…» (título completo en cualquier caja; palabras sueltas solo con mayúscula inicial). Si el personaje es el título, la pista dice «Su nombre está en el título».
 
+**Traducciones** (`catalog/translations.py`): los textos en inglés se guardan traducidos en `data/traducciones.json` como `{"<id Netflix>": {"original", "es"}}`. `fetch_clues` usa la traducción solo si el texto descargado es igual al `original` guardado; así una nueva descarga no pierde las traducciones y un texto que cambie vuelve a quedar pendiente. `pistas --exportar-sin-traducir FICHERO` saca los pendientes como `[{"id", "texto"}]` y `pistas --aplicar-traducciones` los pone en el catálogo. La primera tanda (1.224 frases y críticas) se tradujo al español de España conservando el nombre de quien dice la frase y quitando enlaces y coletillas de blogs.
+
 ### Reglas (`game/hints.py`)
 
 - Sin categoría: 5 puntos y pistas género → año y nota IMDb → actor → personaje → frase.

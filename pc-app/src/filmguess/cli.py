@@ -64,6 +64,18 @@ def build_parser() -> argparse.ArgumentParser:
     clues.add_argument(
         "--todas", action="store_true", help="vuelve a descargar también las que ya tienen pistas"
     )
+    clues.add_argument(
+        "--exportar-sin-traducir",
+        type=Path,
+        default=None,
+        metavar="FICHERO",
+        help="solo escribe en un JSON las frases y críticas que faltan por traducir",
+    )
+    clues.add_argument(
+        "--aplicar-traducciones",
+        action="store_true",
+        help="solo aplica data/traducciones.json al catálogo",
+    )
     plat = sub.add_parser(
         "plataformas",
         help="descarga aparte el catálogo de todas las plataformas del país (TMDB y Wikidata)",
@@ -210,7 +222,24 @@ def _cmd_import(config: AppConfig, args: argparse.Namespace) -> int:
 
 def _cmd_clues(config: AppConfig, args: argparse.Namespace) -> int:
     from filmguess.catalog.clues_fetch import CluesProgress
-    from filmguess.catalog.service import run_clues
+    from filmguess.catalog.service import (
+        run_apply_translations,
+        run_clues,
+        run_export_untranslated,
+    )
+    from filmguess.catalog.translations import TranslationsError
+
+    if args.exportar_sin_traducir:
+        n = run_export_untranslated(config, args.exportar_sin_traducir)
+        print(f"{n} textos sin traducir en {args.exportar_sin_traducir}")
+        return 0
+    if args.aplicar_traducciones:
+        try:
+            print(f"Traducciones aplicadas: {run_apply_translations(config)}")
+        except TranslationsError as exc:
+            print(f"Error en las traducciones: {exc}")
+            return 1
+        return 0
 
     def progress(p: CluesProgress) -> None:
         if p.stage != "tmdb" or p.done % 200 == 0 or p.done == p.total:
@@ -218,7 +247,7 @@ def _cmd_clues(config: AppConfig, args: argparse.Namespace) -> int:
 
     try:
         summary = run_clues(config, refresh=args.todas, limit=args.limite, on_progress=progress)
-    except TmdbError as exc:
+    except (TmdbError, TranslationsError) as exc:
         print(f"Error al descargar las pistas: {exc}")
         return 1
     print(

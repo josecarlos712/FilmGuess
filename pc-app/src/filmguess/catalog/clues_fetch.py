@@ -23,6 +23,7 @@ from filmguess.catalog.clues import (
 )
 from filmguess.catalog.db import CatalogDB, ClueTarget
 from filmguess.catalog.tmdb import TmdbAuthError, TmdbClient, TmdbError
+from filmguess.catalog.translations import Translation, translate
 from filmguess.catalog.wikidata import SPARQL_URL, USER_AGENT
 
 log = logging.getLogger(__name__)
@@ -197,6 +198,7 @@ async def fetch_clues(
     refresh: bool = False,
     limit: int | None = None,
     on_progress: ProgressCallback | None = None,
+    translations: dict[int, Translation] | None = None,
 ) -> CluesProgress:
     """Descarga y guarda las pistas del catálogo de juego.
 
@@ -207,6 +209,7 @@ async def fetch_clues(
         refresh: Vuelve a descargar también las que ya tienen pistas.
         limit: Máximo de películas.
         on_progress: Recibe el progreso.
+        translations: Traducciones guardadas de frases y críticas.
 
     Returns:
         El resumen.
@@ -279,6 +282,7 @@ async def fetch_clues(
         if quote is None and info.tagline:
             quote, source, lang = redact(info.tagline, words), "eslogan", "es"
             progress.taglines += 1
+        quote, lang = translate(target.netflix_id, quote, lang, translations or {})
         character = redact(info.character, words) if info.character else None
         db.save_clues(
             target.netflix_id,

@@ -25,6 +25,13 @@ from filmguess.catalog.platforms import (
 )
 from filmguess.catalog.platforms import ProgressCallback as HarvestCallback
 from filmguess.catalog.tmdb import TmdbClient
+from filmguess.catalog.translations import FILENAME as TRANSLATIONS_FILENAME
+from filmguess.catalog.translations import (
+    Translation,
+    apply_translations,
+    export_untranslated,
+    load_translations,
+)
 from filmguess.catalog.wikidata import download_wikidata
 from filmguess.config import AppConfig
 
@@ -314,7 +321,56 @@ def run_clues(
     """
     db = CatalogDB(db_path(config))
     try:
-        return asyncio.run(_clues(config, db, refresh, limit, on_progress))
+        translations = load_translations(translations_path(config))
+        return asyncio.run(_clues(config, db, refresh, limit, on_progress, translations))
+    finally:
+        db.close()
+
+
+def translations_path(config: AppConfig) -> Path:
+    """Ruta del fichero de traducciones de frases y críticas.
+
+    Args:
+        config: Configuración de la app.
+
+    Returns:
+        Ruta absoluta.
+    """
+    return config.resolve(config.catalog.data_dir) / TRANSLATIONS_FILENAME
+
+
+def run_apply_translations(config: AppConfig) -> int:
+    """Aplica al catálogo las traducciones guardadas.
+
+    Args:
+        config: Configuración de la app.
+
+    Returns:
+        Cuántos textos se han traducido.
+
+    Raises:
+        TranslationsError: Si el fichero de traducciones está dañado.
+    """
+    db = CatalogDB(db_path(config))
+    try:
+        return apply_translations(db, load_translations(translations_path(config)))
+    finally:
+        db.close()
+
+
+def run_export_untranslated(config: AppConfig, dest: Path) -> int:
+    """Exporta las frases y críticas que faltan por traducir.
+
+    Args:
+        config: Configuración de la app.
+        dest: JSON de salida.
+
+    Returns:
+        Cuántos textos se han exportado.
+    """
+    db = CatalogDB(db_path(config))
+    try:
+        return export_untranslated(db, dest)
     finally:
         db.close()
 
@@ -325,6 +381,7 @@ async def _clues(
     refresh: bool,
     limit: int | None,
     on_progress: CluesCallback | None,
+    translations: dict[int, Translation],
 ) -> CluesProgress:
     wiki = WikiClient()
     try:
@@ -332,7 +389,13 @@ async def _clues(
             config.tmdb.api_key, language=config.tmdb.language, region=config.tmdb.region
         ) as client:
             return await fetch_clues(
-                db, client, wiki, refresh=refresh, limit=limit, on_progress=on_progress
+                db,
+                client,
+                wiki,
+                refresh=refresh,
+                limit=limit,
+                on_progress=on_progress,
+                translations=translations,
             )
     finally:
         await wiki.aclose()
