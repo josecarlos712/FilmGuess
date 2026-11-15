@@ -97,16 +97,48 @@ OVERLAY_CSS = """
   margin: calc(var(--u) * 2.4) 0 0; font-family: var(--font-mono);
   font-size: calc(var(--u) * 2.6); color: var(--p-accent); letter-spacing: -0.02em;
 }
+#fg-hints {
+  position: fixed; left: calc(var(--u) * 2.4); bottom: calc(var(--u) * 2.4);
+  z-index: 2147483646; margin: 0; box-sizing: border-box;
+  --u: min(1vw, calc(100vh / 56.25));
+  width: max-content; max-width: calc(var(--u) * 34); max-height: 46vh; overflow: hidden;
+  padding: calc(var(--u) * 1.4) calc(var(--u) * 1.7);
+  border-radius: var(--radius-m); background: rgb(17 17 17 / 0.78);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  color: var(--p-ink); font-family: var(--font-text); -webkit-font-smoothing: antialiased;
+  animation: fg-in var(--enter-ms) var(--ease-out) both;
+}
+#fg-hints .fg-hints-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: calc(var(--u) * 1);
+}
+#fg-hints p { margin: 0; }
+#fg-hints .fg-value {
+  font-family: var(--font-display); font-weight: var(--display-weight);
+  font-size: calc(var(--u) * 2.3); letter-spacing: var(--display-tracking); color: var(--p-accent);
+}
+#fg-hints .fg-chip { font-size: calc(var(--u) * 1.7); color: var(--p-muted); }
+#fg-hints ol {
+  display: grid; gap: calc(var(--u) * 0.9); margin: calc(var(--u) * 1.1) 0 0; padding: 0;
+  list-style: none;
+}
+#fg-hints li { display: grid; gap: calc(var(--u) * 0.2); }
+#fg-hints .fg-hint-label {
+  font-size: calc(var(--u) * 1.7); color: var(--p-muted);
+}
+#fg-hints .fg-hint-text {
+  font-size: calc(var(--u) * 2.1); line-height: 1.25; text-wrap: pretty;
+}
+#fg-hints .fg-long { font-size: calc(var(--u) * 1.8); font-style: italic; }
 @keyframes fg-in {
   from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  #fg-reveal, #fg-cover .fg-bar::after { animation: none; }
+  #fg-reveal, #fg-hints, #fg-cover .fg-bar::after { animation: none; }
 }
 """
 """Cubierta de carga y capa de «Revelar», con los tokens de ``web/system.css``."""
 
-TEXTS: dict[str, str] = {"cover": "Preparando fotograma…"}
+TEXTS: dict[str, str] = {"cover": "Preparando fotograma…", "skip": "Saltando escena…"}
 """Textos que pinta el script en la página de Netflix."""
 
 
@@ -116,7 +148,7 @@ def page_css() -> str:
     Returns:
         El CSS completo.
     """
-    tokens = f"#fg-cover, #fg-reveal {{ {design_tokens()} }}"
+    tokens = f"#fg-cover, #fg-reveal, #fg-hints {{ {design_tokens()} }}"
     return "\n".join([FONTS_IMPORT, HIDE_CSS, tokens, OVERLAY_CSS])
 
 

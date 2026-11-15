@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from collections.abc import Iterable, Sequence
 from dataclasses import fields
@@ -9,6 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, NamedTuple, cast
 
+from filmguess.catalog.clues import Clues, Genre
 from filmguess.catalog.csv_source import CsvMovie
 from filmguess.catalog.models import Confidence, Movie, TmdbMatch
 from filmguess.catalog.wikidata import WikidataMovie
@@ -59,12 +61,37 @@ ON movies BEGIN
     VALUES (new.netflix_id, new.title_es, new.original_title, new.csv_title);
 END;
 
+CREATE TABLE IF NOT EXISTS clues (
+    netflix_id   INTEGER PRIMARY KEY,
+    genres       TEXT NOT NULL DEFAULT '[]',
+    actor        TEXT,
+    character    TEXT,
+    quote        TEXT,
+    quote_source TEXT,
+    quote_lang   TEXT,
+    fetched_at   TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS random_history (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     netflix_id INTEGER NOT NULL,
     picked_at  TEXT NOT NULL
 );
 """
+
+
+class ClueTarget(NamedTuple):
+    """Película del catálogo de juego a la que se le buscan pistas."""
+
+    netflix_id: int
+    tmdb_id: int
+    titles: tuple[str | None, ...]
+
+
+GENRE_FILTER = (
+    "EXISTS (SELECT 1 FROM clues c, json_each(c.genres) g "
+    "WHERE c.netflix_id = m.netflix_id AND json_extract(g.value, '$.id') = ?)"
+)
 
 
 class PendingMovie(NamedTuple):
@@ -352,7 +379,13 @@ class CatalogDB:
         return [_row_to_movie(r) for r in rows], total
 
     def search_fts(
-        self, fts_query: str, *, only_netflix_es: bool, limit: int, offset: int
+        self,
+        fts_query: str,
+        *,
+        only_netflix_es: bool,
+        limit: int,
+        offset: int,
+        genre_id: int | None = None,
     ) -> tuple[list[Movie], int]:
         """Búsqueda de texto completo.
 
@@ -361,39 +394,141 @@ class CatalogDB:
             only_netflix_es: Si se limitan los resultados a ``netflix_es = 1``.
             limit: Tamaño de página.
             offset: Desplazamiento.
+            genre_id: Solo películas de este género de TMDB.
 
         Returns:
             La página de resultados y el total de coincidencias.
         """
         where = "movies_fts MATCH ?"
+        params: list[Any] = [fts_query]
         if only_netflix_es:
             where += " AND m.netflix_es = 1"
+        if genre_id is not None:
+            where += f" AND {GENRE_FILTER}"
+            params.append(genre_id)
         base = f"FROM movies_fts JOIN movies m ON m.netflix_id = movies_fts.rowid WHERE {where}"
-        total = int(self._conn.execute(f"SELECT COUNT(*) {base}", (fts_query,)).fetchone()[0])
+        total = int(self._conn.execute(f"SELECT COUNT(*) {base}", params).fetchone()[0])
         cols = ", ".join(f"m.{c}" for c in _MOVIE_COLUMNS)
         rows = self._conn.execute(
             f"SELECT {cols} {base} "
             "ORDER BY bm25(movies_fts, 10.0, 5.0, 2.0), COALESCE(m.imdb_votes, 0) DESC "
             "LIMIT ? OFFSET ?",
-            (fts_query, limit, offset),
+            (*params, limit, offset),
         ).fetchall()
         return [_row_to_movie(r) for r in rows], total
 
-    def random_candidates(self, *, min_year: int) -> list[Movie]:
+    def random_candidates(self, *, min_year: int, genre_id: int | None = None) -> list[Movie]:
         """Películas aptas para el modo aleatorio (sin ordenar ni recortar).
 
         Args:
             min_year: Año mínimo de estreno.
+            genre_id: Solo películas de este género de TMDB.
 
         Returns:
             Películas disponibles en ES, con confianza alta o media y año >= ``min_year``.
         """
-        rows = self._conn.execute(
+        sql = (
             f"{_SELECT_MOVIE} WHERE m.netflix_es = 1 AND m.match_conf IN ('alta', 'media') "
-            "AND m.year >= ?",
-            (min_year,),
-        ).fetchall()
+            "AND m.year >= ?"
+        )
+        params: list[Any] = [min_year]
+        if genre_id is not None:
+            sql += f" AND {GENRE_FILTER}"
+            params.append(genre_id)
+        rows = self._conn.execute(sql, params).fetchall()
         return [_row_to_movie(r) for r in rows]
+
+    # --- Pistas ------------------------------------------------------------
+
+    def clue_targets(self, *, refresh: bool = False) -> list[ClueTarget]:
+        """Películas del catálogo de juego (disponibles en ES y con TMDB) sin pistas aún.
+
+        Args:
+            refresh: Incluye también las que ya tienen pistas.
+
+        Returns:
+            Las películas, de la más votada a la menos.
+        """
+        where = "m.netflix_es = 1 AND m.tmdb_id IS NOT NULL"
+        if not refresh:
+            where += " AND NOT EXISTS (SELECT 1 FROM clues c WHERE c.netflix_id = m.netflix_id)"
+        rows = self._conn.execute(
+            "SELECT m.netflix_id, m.tmdb_id, m.title_es, m.original_title, m.csv_title "
+            f"FROM movies m WHERE {where} ORDER BY COALESCE(m.imdb_votes, 0) DESC"
+        ).fetchall()
+        return [ClueTarget(int(r[0]), int(r[1]), (r[2], r[3], r[4])) for r in rows]
+
+    def save_clues(self, netflix_id: int, clues: Clues) -> None:
+        """Guarda (o sustituye) las pistas de una película.
+
+        Args:
+            netflix_id: ID de Netflix.
+            clues: Pistas.
+        """
+        genres = json.dumps(
+            [{"id": g.id, "name": g.name} for g in clues.genres], ensure_ascii=False
+        )
+        with self._conn:
+            self._conn.execute(
+                "INSERT OR REPLACE INTO clues(netflix_id, genres, actor, character, quote, "
+                "quote_source, quote_lang, fetched_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    netflix_id,
+                    genres,
+                    clues.actor,
+                    clues.character,
+                    clues.quote,
+                    clues.quote_source,
+                    clues.quote_lang,
+                    datetime.now(UTC).isoformat(timespec="seconds"),
+                ),
+            )
+
+    def clues(self, netflix_id: int) -> Clues | None:
+        """Pistas de una película.
+
+        Args:
+            netflix_id: ID de Netflix.
+
+        Returns:
+            Las pistas, o ``None`` si aún no se han descargado.
+        """
+        row = self._conn.execute(
+            "SELECT genres, actor, character, quote, quote_source, quote_lang "
+            "FROM clues WHERE netflix_id = ?",
+            (netflix_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        genres = [Genre(int(g["id"]), str(g["name"])) for g in json.loads(row[0] or "[]")]
+        return Clues(genres, row[1], row[2], row[3], row[4], row[5])
+
+    def genre_counts(self) -> list[tuple[Genre, int]]:
+        """Géneros del catálogo de juego con cuántas películas disponibles tienen.
+
+        Returns:
+            Pares (género, películas), de más a menos películas.
+        """
+        rows = self._conn.execute(
+            "SELECT json_extract(g.value, '$.id'), json_extract(g.value, '$.name'), COUNT(*) "
+            "FROM clues c JOIN movies m ON m.netflix_id = c.netflix_id, json_each(c.genres) g "
+            "WHERE m.netflix_es = 1 GROUP BY 1 ORDER BY 3 DESC, 2"
+        ).fetchall()
+        return [(Genre(int(r[0]), str(r[1])), int(r[2])) for r in rows]
+
+    def clue_stats(self) -> dict[str, int]:
+        """Cuántas películas del catálogo de juego tienen cada tipo de pista.
+
+        Returns:
+            Recuentos ``con_pistas``, ``frase``, ``critica``, ``eslogan`` y ``sin_texto``.
+        """
+        row = self._conn.execute(
+            "SELECT COUNT(*), SUM(quote_source = 'wikiquote'), SUM(quote_source = 'critica'), "
+            "SUM(quote_source = 'eslogan'), SUM(quote IS NULL) FROM clues c "
+            "JOIN movies m ON m.netflix_id = c.netflix_id WHERE m.netflix_es = 1"
+        ).fetchone()
+        keys = ("con_pistas", "frase", "critica", "eslogan", "sin_texto")
+        return {k: int(v or 0) for k, v in zip(keys, row, strict=True)}
 
     def recent_random(self, n: int) -> list[int]:
         """IDs elegidos en las últimas ``n`` rondas aleatorias.

@@ -29,6 +29,7 @@ class FakePlayer:
     def __init__(self) -> None:
         self.calls: list[tuple[str, object]] = []
         self.fail: PlayerError | None = None
+        self.hints: dict[str, object] = {}
 
     async def status(self) -> PlayerStatus:
         return PlayerStatus(browser=True, netflix_session=True)
@@ -48,6 +49,12 @@ class FakePlayer:
 
     async def idle(self) -> None:
         self._check("idle", None)
+
+    async def cover(self, message: str | None = None) -> None:
+        self.calls.append(("cover", message))
+
+    async def show_hints(self, data: dict[str, object]) -> None:
+        self.hints = data
 
     async def open_login(self) -> None:
         self._check("open_login", None)

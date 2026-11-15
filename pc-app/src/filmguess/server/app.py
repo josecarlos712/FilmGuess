@@ -48,6 +48,12 @@ ERROR_STATUS: dict[str, int] = {
     "nombre_repetido": 409,
     "demasiados_jugadores": 409,
     "sin_candidatas": 409,
+    "categoria_no_coincide": 422,
+    "sin_pistas": 409,
+    "sin_fotogramas": 409,
+    "clip_usado": 409,
+    "sin_revelar": 409,
+    "ronda_cerrada": 409,
     "peticion_invalida": 422,
     "nombre_invalido": 422,
     "fuera_de_duracion": 422,
@@ -260,12 +266,19 @@ def create_app(
         q: Annotated[str, Query(max_length=100)] = "",
         page: Annotated[int, Query(ge=1, le=1000)] = 1,
         todas: bool = False,
+        categoria: Annotated[int | None, Query(gt=0)] = None,
     ) -> dict[str, Any]:
-        return schemas.search_page(session.search(q, page=page, include_all=todas))
+        return schemas.search_page(
+            session.search(q, page=page, include_all=todas, genre_id=categoria)
+        )
 
     @app.get("/random", dependencies=authed)
-    async def get_random() -> dict[str, Any]:
-        return schemas.movie_detail(session.random_movie())
+    async def get_random(categoria: Annotated[int | None, Query(gt=0)] = None) -> dict[str, Any]:
+        return schemas.movie_detail(session.random_movie(categoria))
+
+    @app.get("/genres", dependencies=authed)
+    async def get_genres() -> dict[str, Any]:
+        return schemas.genres(session.genres())
 
     @app.get("/movie/{netflix_id}", dependencies=authed)
     async def get_movie(netflix_id: int) -> dict[str, Any]:
@@ -273,8 +286,31 @@ def create_app(
 
     @app.post("/play", dependencies=authed)
     async def post_play(body: schemas.PlayRequest) -> dict[str, Any]:
-        actual = await session.play(body.netflixId, body.seconds)
+        actual = await session.play(body.netflixId, body.seconds, body.categoria)
         return {"ok": True, "actualSeconds": actual}
+
+    @app.post("/hint", dependencies=authed)
+    async def post_hint() -> dict[str, Any]:
+        hint = await session.reveal_hint()
+        return {"ok": True, "etiqueta": hint.label, "texto": hint.text}
+
+    @app.post("/frame", dependencies=authed)
+    async def post_frame() -> dict[str, Any]:
+        return {"ok": True, "actualSeconds": await session.next_frame()}
+
+    @app.post("/skip", dependencies=authed)
+    async def post_skip() -> dict[str, Any]:
+        return {"ok": True, "actualSeconds": await session.skip_scene()}
+
+    @app.post("/clip", dependencies=authed)
+    async def post_clip() -> dict[str, Any]:
+        await session.clip()
+        return {"ok": True}
+
+    @app.post("/award", dependencies=authed)
+    async def post_award(body: schemas.AwardRequest) -> dict[str, Any]:
+        await session.award(body.jugadores)
+        return schemas.scoreboard(session.scoreboard.players)
 
     @app.post("/pause", dependencies=authed)
     async def post_pause() -> dict[str, Any]:

@@ -9,9 +9,11 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from filmguess.catalog.clues import Genre
 from filmguess.catalog.models import Movie
 from filmguess.catalog.search import SearchPage
 from filmguess.catalog.tmdb import poster_url
+from filmguess.game.hints import MAX_FRAMES
 from filmguess.game.scoreboard import Player
 from filmguess.game.session import SessionState
 
@@ -21,6 +23,14 @@ class PlayRequest(BaseModel):
 
     netflixId: int = Field(gt=0)
     seconds: int = Field(ge=0)
+    categoria: int | None = Field(default=None, gt=0)
+    """Género elegido: la ronda vale como máximo 3 puntos."""
+
+
+class AwardRequest(BaseModel):
+    """Cuerpo de ``POST /award``: quienes han acertado."""
+
+    jugadores: list[str] = Field(min_length=1, max_length=20)
 
 
 class NewPlayerRequest(BaseModel):
@@ -121,6 +131,18 @@ def search_page(page: SearchPage) -> dict[str, Any]:
     }
 
 
+def genres(items: list[tuple[Genre, int]]) -> dict[str, Any]:
+    """Categorías de ``GET /genres``.
+
+    Args:
+        items: Pares (género, películas).
+
+    Returns:
+        ``{categorias: [{id, nombre, peliculas}]}``.
+    """
+    return {"categorias": [{"id": g.id, "nombre": g.name, "peliculas": n} for g, n in items]}
+
+
 def scoreboard(players: list[Player]) -> dict[str, Any]:
     """Marcador, de más a menos puntos.
 
@@ -145,11 +167,22 @@ def status(state: SessionState) -> dict[str, Any]:
     """
     current = None
     if state.round is not None:
+        r = state.round
         current = {
-            "netflixId": state.round.movie.netflix_id,
-            "segundos": state.round.seconds,
-            "segundosReales": state.round.actual_seconds,
+            "netflixId": r.movie.netflix_id,
+            "segundos": r.seconds,
+            "segundosReales": r.actual_seconds,
             "revelada": state.screen == "revelada",
+            "valor": r.value,
+            "categoria": {"id": r.category.id, "nombre": r.category.name} if r.category else None,
+            "pistas": [
+                {"tipo": h.kind, "etiqueta": h.label, "texto": h.text} for h in r.shown_hints
+            ],
+            "pistasTotal": len(r.hints),
+            "fotogramas": len(r.frames),
+            "fotogramasMax": MAX_FRAMES,
+            "clipUsado": r.clip_used,
+            "acertantes": sorted(r.awarded),
         }
         if state.screen == "revelada":
             current |= movie_summary(state.round.movie)

@@ -69,7 +69,11 @@ def rank_candidates(movies: list[Movie], min_votes: int) -> list[Rated]:
 
 
 def pick_random(
-    db: CatalogDB, config: RandomConfig, rng: random.Random | None = None
+    db: CatalogDB,
+    config: RandomConfig,
+    rng: random.Random | None = None,
+    *,
+    genre_id: int | None = None,
 ) -> Movie | None:
     """Elige al azar una película del grupo de las mejor valoradas y la apunta.
 
@@ -80,12 +84,15 @@ def pick_random(
         db: Catálogo.
         config: Umbrales del modo aleatorio.
         rng: Generador aleatorio (para pruebas).
+        genre_id: Solo películas de este género de TMDB.
 
     Returns:
         La película elegida, o ``None`` si no hay candidatas.
     """
     rng = rng or random.Random()
-    ranked = rank_candidates(db.random_candidates(min_year=config.min_year), config.min_votes)
+    ranked = rank_candidates(
+        db.random_candidates(min_year=config.min_year, genre_id=genre_id), config.min_votes
+    )
     pool = [r.movie for r in ranked[: config.pool_size]]
     if not pool:
         return None

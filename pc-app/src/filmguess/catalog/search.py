@@ -47,6 +47,7 @@ def search_movies(
     page: int = 1,
     include_unconfirmed: bool = False,
     page_size: int = PAGE_SIZE,
+    genre_id: int | None = None,
 ) -> SearchPage:
     """Busca por título en español, original o del CSV, sin distinguir acentos.
 
@@ -56,6 +57,7 @@ def search_movies(
         page: Página (desde 1).
         include_unconfirmed: Incluye películas no confirmadas en Netflix España.
         page_size: Resultados por página.
+        genre_id: Solo películas de este género de TMDB.
 
     Returns:
         La página pedida (vacía si el texto no tiene palabras).
@@ -69,5 +71,6 @@ def search_movies(
         only_netflix_es=not include_unconfirmed,
         limit=page_size,
         offset=(page - 1) * page_size,
+        genre_id=genre_id,
     )
     return SearchPage(results, total, page, page_size)

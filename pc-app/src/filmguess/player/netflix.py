@@ -142,7 +142,11 @@ class NetflixPlayer:
         deadline = started + self.timeout_s
         page = await self.browser.page()
         url = WATCH_URL.format(id=netflix_id, seconds=seconds)
-        await self._goto(page, url)
+        if f"/watch/{netflix_id}" in page.url and await self._call_soft(page, "cover"):
+            # Misma película (otro fotograma): se tapa y se salta sin recargar la página.
+            await self._call_soft(page, "hideHints")
+        else:
+            await self._goto(page, url)
         state = await self._wait_ready(page, url, deadline)
         current = await self._settle_position(page, url, seconds, state, deadline)
         await self._call(page, "pause")
@@ -172,6 +176,31 @@ class NetflixPlayer:
             PlayerError: Si el navegador está cerrado.
         """
         await self._call(await self.browser.page(), "play")
+
+    async def cover(self, message: str | None = None) -> None:
+        """Tapa la tele al instante (por ejemplo, para saltar una escena).
+
+        Args:
+            message: Texto de la cubierta; por defecto, «Preparando fotograma…».
+
+        Raises:
+            PlayerError: Si el navegador está cerrado o la pestaña no es Netflix.
+        """
+        page = await self.browser.page()
+        await self._call(page, "cover", message)
+        await self._call(page, "pause")
+
+    async def show_hints(self, data: dict[str, Any]) -> None:
+        """Pinta en una esquina el valor de la ronda, el fotograma y las pistas reveladas.
+
+        Args:
+            data: ``valueText``, ``category``, ``frameText`` y ``hints`` (``label``, ``text``,
+                ``long``).
+
+        Raises:
+            PlayerError: Si el navegador está cerrado o la pestaña no es Netflix.
+        """
+        await self._call(await self.browser.page(), "showHints", data)
 
     async def reveal(self, info: RevealInfo) -> None:
         """Muestra el título y el póster sobre el vídeo pausado.

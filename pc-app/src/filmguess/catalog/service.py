@@ -7,6 +7,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
+from filmguess.catalog.clues_fetch import CluesProgress, WikiClient, fetch_clues
+from filmguess.catalog.clues_fetch import ProgressCallback as CluesCallback
 from filmguess.catalog.db import CatalogDB
 from filmguess.catalog.imdb import apply_ratings, download_ratings
 from filmguess.catalog.importer import ImportProgress, enrich_pending, ingest_csv, ingest_wikidata
@@ -287,3 +289,50 @@ async def _fill_ids(
         config.tmdb.api_key, language=config.tmdb.language, region=config.tmdb.region
     ) as client:
         return await fill_imdb_ids(db, client, on_progress=on_progress)
+
+
+def run_clues(
+    config: AppConfig,
+    *,
+    refresh: bool = False,
+    limit: int | None = None,
+    on_progress: CluesCallback | None = None,
+) -> CluesProgress:
+    """Descarga las pistas (géneros, reparto, frase o crítica) del catálogo de juego.
+
+    Args:
+        config: Configuración de la app.
+        refresh: Vuelve a descargar también las que ya tienen pistas.
+        limit: Máximo de películas.
+        on_progress: Recibe el progreso.
+
+    Returns:
+        El resumen.
+
+    Raises:
+        TmdbError: Si TMDB rechaza la clave.
+    """
+    db = CatalogDB(db_path(config))
+    try:
+        return asyncio.run(_clues(config, db, refresh, limit, on_progress))
+    finally:
+        db.close()
+
+
+async def _clues(
+    config: AppConfig,
+    db: CatalogDB,
+    refresh: bool,
+    limit: int | None,
+    on_progress: CluesCallback | None,
+) -> CluesProgress:
+    wiki = WikiClient()
+    try:
+        async with TmdbClient(
+            config.tmdb.api_key, language=config.tmdb.language, region=config.tmdb.region
+        ) as client:
+            return await fetch_clues(
+                db, client, wiki, refresh=refresh, limit=limit, on_progress=on_progress
+            )
+    finally:
+        await wiki.aclose()

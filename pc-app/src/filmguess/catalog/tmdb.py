@@ -269,6 +269,38 @@ class TmdbClient:
             {"language": self.language, "append_to_response": "external_ids,watch/providers"},
         )
 
+    async def movie_clues(self, tmdb_id: int) -> dict[str, Any]:
+        """Ficha de una película con su reparto (para las pistas).
+
+        Args:
+            tmdb_id: ID de TMDB.
+
+        Returns:
+            JSON de ``/movie/{id}`` con ``credits``.
+
+        Raises:
+            TmdbNotFoundError: Si TMDB no tiene esa película.
+            TmdbError: Si la petición falla.
+        """
+        return await self._get(
+            f"/movie/{tmdb_id}", {"language": self.language, "append_to_response": "credits"}
+        )
+
+    async def movie_reviews(self, tmdb_id: int) -> dict[str, Any]:
+        """Críticas de usuarios de una película (casi todas en inglés).
+
+        Args:
+            tmdb_id: ID de TMDB.
+
+        Returns:
+            JSON de ``/movie/{id}/reviews``.
+
+        Raises:
+            TmdbNotFoundError: Si TMDB no tiene esa película.
+            TmdbError: Si la petición falla.
+        """
+        return await self._get(f"/movie/{tmdb_id}/reviews", {})
+
     async def _get(self, path: str, params: dict[str, str]) -> dict[str, Any]:
         last_error = "sin respuesta"
         for attempt in range(self._max_retries + 1):

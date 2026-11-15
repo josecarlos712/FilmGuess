@@ -56,6 +56,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="descarga antes title.ratings.tsv.gz de IMDb (unos 8 MB)",
     )
+    clues = sub.add_parser(
+        "pistas",
+        help="descarga las pistas del catálogo de juego (géneros, reparto, frase o crítica)",
+    )
+    clues.add_argument("--limite", type=int, default=None, help="máximo de películas")
+    clues.add_argument(
+        "--todas", action="store_true", help="vuelve a descargar también las que ya tienen pistas"
+    )
     plat = sub.add_parser(
         "plataformas",
         help="descarga aparte el catálogo de todas las plataformas del país (TMDB y Wikidata)",
@@ -127,6 +135,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if command == "importar":
         return _cmd_import(config, args)
+    if command == "pistas":
+        return _cmd_clues(config, args)
     if command == "plataformas":
         return _cmd_platforms(config, args)
     if command == "exportar-plataformas":
@@ -195,6 +205,27 @@ def _cmd_import(config: AppConfig, args: argparse.Namespace) -> int:
         print(f"IMDb: {summary.imdb_updated} valoraciones aplicadas.")
     elif summary.imdb_missing:
         print("IMDb: no hay fichero de valoraciones; usa --descargar-imdb para obtenerlo.")
+    return 0
+
+
+def _cmd_clues(config: AppConfig, args: argparse.Namespace) -> int:
+    from filmguess.catalog.clues_fetch import CluesProgress
+    from filmguess.catalog.service import run_clues
+
+    def progress(p: CluesProgress) -> None:
+        if p.stage != "tmdb" or p.done % 200 == 0 or p.done == p.total:
+            print(f"  {p.stage} {p.done}/{p.total} · errores {p.errors}", flush=True)
+
+    try:
+        summary = run_clues(config, refresh=args.todas, limit=args.limite, on_progress=progress)
+    except TmdbError as exc:
+        print(f"Error al descargar las pistas: {exc}")
+        return 1
+    print(
+        f"Pistas: {summary.done - summary.errors} películas · frases de Wikiquote "
+        f"{summary.quotes} · críticas {summary.reviews} · eslóganes {summary.taglines} · "
+        f"errores {summary.errors}"
+    )
     return 0
 
 

@@ -29,14 +29,18 @@
   // Tapa el vídeo desde antes de que se pinte hasta que Python lo deja quieto en su segundo
   // (uncover), para que no se vea Netflix cargando ni otro fotograma.
   const TEXTS = cfg.texts || {};
-  const cover = () => {
-    if (document.getElementById("fg-cover")) return true;
+  const cover = (message) => {
+    const current = document.getElementById("fg-cover");
+    if (current) {
+      if (message) current.querySelector("p").textContent = message;
+      return true;
+    }
     const root = document.body || document.documentElement;
     if (!root) return false;
     const box = document.createElement("div");
     box.id = "fg-cover";
     const label = document.createElement("p");
-    label.textContent = TEXTS.cover || "";
+    label.textContent = message || TEXTS.cover || "";
     const bar = document.createElement("div");
     bar.className = "fg-bar";
     box.append(label, bar);
@@ -157,6 +161,7 @@
 
   const showReveal = (info) => {
     hideReveal();
+    hideHints();
     const box = document.createElement("div");
     box.id = "fg-reveal";
     const inner = document.createElement("div");
@@ -194,6 +199,51 @@
     return true;
   };
 
+  // --- Pistas de la ronda: en una esquina, sin tapar la escena ----------------------
+  // data: { value, category, frame, frames, hints: [{ label, text }] }
+  const showHints = (data) => {
+    hideHints();
+    const box = document.createElement("aside");
+    box.id = "fg-hints";
+    const head = document.createElement("div");
+    head.className = "fg-hints-head";
+    const value = document.createElement("p");
+    value.className = "fg-value";
+    value.textContent = data.valueText || "";
+    head.appendChild(value);
+    for (const extra of [data.category, data.frameText]) {
+      if (!extra) continue;
+      const chip = document.createElement("p");
+      chip.className = "fg-chip";
+      chip.textContent = extra;
+      head.appendChild(chip);
+    }
+    box.appendChild(head);
+    if (data.hints && data.hints.length) {
+      const list = document.createElement("ol");
+      for (const hint of data.hints) {
+        const item = document.createElement("li");
+        const label = document.createElement("span");
+        label.className = "fg-hint-label";
+        label.textContent = hint.label;
+        const body = document.createElement("span");
+        body.className = "fg-hint-text" + (hint.long ? " fg-long" : "");
+        body.textContent = hint.text;
+        item.append(label, body);
+        list.appendChild(item);
+      }
+      box.appendChild(list);
+    }
+    (document.fullscreenElement || document.body).appendChild(box);
+    return true;
+  };
+
+  function hideHints() {
+    const old = document.getElementById("fg-hints");
+    if (old) old.remove();
+    return true;
+  }
+
   function hideReveal() {
     const old = document.getElementById("fg-reveal");
     if (old) old.remove();
@@ -209,6 +259,8 @@
     play,
     showReveal,
     hideReveal,
+    showHints,
+    hideHints,
     cover,
     uncover,
   };

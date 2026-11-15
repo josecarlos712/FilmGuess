@@ -6,7 +6,7 @@ El servidor solo depende de esta interfaz; la implementación con Netflix llega 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 
 class PlayerError(Exception):
@@ -72,6 +72,14 @@ class Player(Protocol):
         """Reanuda la reproducción."""
         ...
 
+    async def cover(self, message: str | None = None) -> None:
+        """Tapa la tele al instante y pausa (para saltar una escena)."""
+        ...
+
+    async def show_hints(self, data: dict[str, Any]) -> None:
+        """Pinta en una esquina el valor de la ronda y las pistas reveladas."""
+        ...
+
     async def reveal(self, info: RevealInfo) -> None:
         """Muestra el título y el póster sobre el vídeo pausado."""
         ...
@@ -119,6 +127,22 @@ class UnavailablePlayer:
         raise self._error()
 
     async def resume(self) -> None:
+        """Siempre falla.
+
+        Raises:
+            PlayerError: Siempre, con ``navegador_cerrado``.
+        """
+        raise self._error()
+
+    async def cover(self, message: str | None = None) -> None:
+        """Siempre falla.
+
+        Raises:
+            PlayerError: Siempre, con ``navegador_cerrado``.
+        """
+        raise self._error()
+
+    async def show_hints(self, data: dict[str, Any]) -> None:
         """Siempre falla.
 
         Raises:
