@@ -350,18 +350,30 @@ class GameSession:
         given: list[Player] = []
         value = current.value
         for pid in dict.fromkeys(player_ids):
-            if pid in current.awarded:
-                continue
+            if pid in current.awarded or pid in current.failed:
+                continue  # ya los tiene, o falló y está fuera de la ronda
             given.append(self._give(pid, value))
             current.awarded.add(pid)
         await self._emit_scoreboard()
         await self._emit_state()
         return given
 
+    def peek(self) -> Movie:
+        """La película de la ronda, para comprobarla en el móvil sin enseñarla en la tele.
+
+        Returns:
+            La película en juego.
+
+        Raises:
+            GameError: Si no hay ronda.
+        """
+        return self._require_round().movie
+
     async def fail(self, player_ids: list[str]) -> list[Player]:
         """Resta a quien se arriesga y falla los puntos que vale la ronda en ese momento.
 
-        La ronda sigue para los demás. Cada jugador solo puede fallar una vez por ronda.
+        La ronda sigue para los demás. Quien falla queda fuera: ya no puede recibir puntos
+        en esta ronda.
 
         Args:
             player_ids: Jugadores que han fallado.

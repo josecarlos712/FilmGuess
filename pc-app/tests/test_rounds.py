@@ -166,6 +166,19 @@ def test_quien_se_arriesga_y_falla_pierde_lo_que_vale_la_ronda(client: TestClien
     client.post("/reveal", headers=HEADERS)
     cerrada = client.post("/fail", json={"jugadores": ids}, headers=HEADERS)
     assert cerrada.status_code == 409 and cerrada.json()["error"] == "ronda_cerrada"
+    # Quien ha fallado está fuera de la ronda: no recibe puntos aunque se le marque.
+    marcador = client.post("/award", json={"jugadores": ids}, headers=HEADERS).json()
+    assert {j["nombre"]: j["puntos"] for j in marcador["jugadores"]} == puntos
+
+
+def test_ver_el_titulo_en_el_movil_no_lo_revela_en_la_tele(client: TestClient) -> None:
+    assert client.get("/peek", headers=HEADERS).status_code == 409
+    client.post("/play", json={"netflixId": ORIGEN, "seconds": 600}, headers=HEADERS)
+
+    visto = client.get("/peek", headers=HEADERS).json()
+
+    assert visto["titulo"] == "Origen"
+    assert ronda(client)["revelada"] is False and "titulo" not in ronda(client)
 
 
 def test_reparto_de_puntos_tras_revelar(client: TestClient) -> None:

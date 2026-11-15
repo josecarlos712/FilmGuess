@@ -17,7 +17,8 @@ const state = {
   genres: null, // [{ id, nombre, peliculas }]
   category: null, // { id, nombre } o null
   picked: new Set(), // jugadores marcados como acertantes
-  missed: new Set(), // jugadores marcados como que han fallado
+  risk: null, // jugador que se arriesga ahora
+  peek: null, // título visto en privado en este móvil: { netflixId, titulo, anio }
   adjust: false,
 };
 
@@ -404,10 +405,25 @@ $("btn-dar").addEventListener("click", (e) =>
     state.picked.clear();
   }),
 );
+$("btn-ver").addEventListener("click", (e) =>
+  run(e.currentTarget, "error-ronda", async () => {
+    state.peek = await state.api.peek();
+    renderRound();
+  }),
+);
+$("btn-acierta").addEventListener("click", (e) =>
+  run(e.currentTarget, "error-ronda", async () => {
+    const winner = state.risk;
+    state.risk = null;
+    await state.api.reveal();
+    await state.api.award([winner]);
+  }),
+);
 $("btn-restar").addEventListener("click", (e) =>
   run(e.currentTarget, "error-ronda", async () => {
-    await state.api.fail([...state.missed]);
-    state.missed.clear();
+    const loser = state.risk;
+    state.risk = null;
+    await state.api.fail([loser]);
   }),
 );
 $("btn-ajustar").addEventListener("click", () => {
@@ -506,12 +522,13 @@ function renderAward() {
   const done = new Set(round.acertantes || []);
   for (const p of state.players) {
     const given = done.has(p.id);
+    const out = (round.fallos || []).includes(p.id); // falló: fuera de la ronda
     const on = given || state.picked.has(p.id);
-    const chip = el("button", "chip", given ? `${p.nombre} ✓` : p.nombre);
+    const chip = el("button", "chip", given ? `${p.nombre} ✓` : out ? `${p.nombre} ✗` : p.nombre);
     chip.type = "button";
     chip.classList.toggle("on", on);
     chip.setAttribute("aria-pressed", String(on));
-    chip.disabled = given;
+    chip.disabled = given || out;
     chip.addEventListener("click", () => {
       if (state.picked.has(p.id)) state.picked.delete(p.id);
       else state.picked.add(p.id);
@@ -530,30 +547,42 @@ function renderFail(playing) {
   const round = state.status && state.status.rondaActual;
   const show = Boolean(round) && !round.revelada && state.players.length > 0;
   $("fallo").classList.toggle("hidden", !show);
+  if (state.peek && (!round || state.peek.netflixId !== round.netflixId)) state.peek = null;
   if (!show) {
-    state.missed.clear();
+    state.risk = null;
     return;
   }
-  $("fallo-titulo").textContent = TEXTOS.quienFallo(round.valor);
+  const done = new Set(round.fallos || []);
+  if (state.risk && (done.has(state.risk) || !state.players.some((p) => p.id === state.risk))) {
+    state.risk = null;
+  }
+  $("fallo-titulo").textContent = TEXTOS.arriesgar(round.valor);
   const list = $("fallo-jugadores");
   list.replaceChildren();
-  const done = new Set(round.fallos || []);
   for (const p of state.players) {
-    const charged = done.has(p.id);
-    const on = charged || state.missed.has(p.id);
-    const chip = el("button", "chip", charged ? `${p.nombre} ✗` : p.nombre);
+    const out = done.has(p.id);
+    const on = state.risk === p.id;
+    const chip = el("button", "chip", out ? `${p.nombre} ✗` : p.nombre);
     chip.type = "button";
     chip.classList.toggle("on", on);
     chip.setAttribute("aria-pressed", String(on));
-    chip.disabled = charged || !playing;
+    chip.disabled = out || !playing;
     chip.addEventListener("click", () => {
-      if (state.missed.has(p.id)) state.missed.delete(p.id);
-      else state.missed.add(p.id);
+      state.risk = on ? null : p.id;
       renderFail(playing);
     });
     list.appendChild(chip);
   }
-  $("btn-restar").disabled = !playing || state.missed.size === 0;
+  const seen = Boolean(state.peek);
+  $("btn-ver").classList.toggle("hidden", seen);
+  $("btn-ver").disabled = !playing || !state.risk;
+  $("fallo-secreto").classList.toggle("hidden", !seen);
+  if (seen) {
+    $("fallo-pelicula").textContent = state.peek.titulo;
+    $("fallo-anio").textContent = state.peek.anio ? String(state.peek.anio) : "";
+  }
+  $("btn-acierta").disabled = !playing || !state.risk;
+  $("btn-restar").disabled = !playing || !state.risk;
 }
 
 // --- Jugadores ---------------------------------------------------------------------

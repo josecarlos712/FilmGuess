@@ -312,6 +312,10 @@ def create_app(
         await session.award(body.jugadores)
         return schemas.scoreboard(session.scoreboard.players)
 
+    @app.get("/peek", dependencies=authed)
+    async def get_peek() -> dict[str, Any]:
+        return schemas.movie_summary(session.peek())
+
     @app.post("/fail", dependencies=authed)
     async def post_fail(body: schemas.AwardRequest) -> dict[str, Any]:
         await session.fail(body.jugadores)

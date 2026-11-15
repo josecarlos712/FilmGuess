@@ -675,3 +675,10 @@ input:focus-visible {
 .award.fail {
   border-color: color-mix(in srgb, var(--p-danger) 40%, transparent);
 }
+
+.secret {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--p-line);
+}

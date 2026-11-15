@@ -107,7 +107,16 @@
             <div id="fallo" class="award fail card hidden">
               <p id="fallo-titulo" class="award-title"></p>
               <div id="fallo-jugadores" class="chips wrap" role="group"></div>
-              <button id="btn-restar" type="button" class="btn skip wide" data-text="restarPuntos"></button>
+              <button id="btn-ver" type="button" class="btn secondary wide" data-text="verTitulo"></button>
+              <div id="fallo-secreto" class="secret hidden">
+                <p class="muted small" data-text="tituloPrivado"></p>
+                <p id="fallo-pelicula" class="round-title"></p>
+                <p id="fallo-anio" class="muted num"></p>
+                <div class="pair-btns">
+                  <button id="btn-acierta" type="button" class="btn" data-text="haAcertado"></button>
+                  <button id="btn-restar" type="button" class="btn skip" data-text="haFallado"></button>
+                </div>
+              </div>
             </div>
           </div>
           <div id="acierto" class="award card hidden">
