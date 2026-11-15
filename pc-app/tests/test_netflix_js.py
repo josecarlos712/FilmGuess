@@ -91,15 +91,30 @@ async def test_play_salta_pausa_y_oculta_la_interfaz(player: NetflixPlayer) -> N
             (s) => getComputedStyle(document.querySelector(s)).display)"""
     )
     assert hidden == ["none", "none"]
+    assert await page.evaluate("document.getElementById('fg-cover')") is None
+
+
+async def test_cubierta_tapa_el_video_mientras_carga(player: NetflixPlayer) -> None:
+    page = await player.browser.page()
+    await page.goto("https://www.netflix.com/watch/1?t=0")
+
+    text = await page.evaluate("document.getElementById('fg-cover').innerText")
+    assert text == "Preparando fotograma…"
+    await page.evaluate("window.__fg.uncover()")
+    assert await page.evaluate("document.getElementById('fg-cover')") is None
 
 
 async def test_revelar_muestra_titulo_y_anio(player: NetflixPlayer) -> None:
     await player.play(1, 30)
-    await player.reveal(RevealInfo("Origen", 2010, None))
+    await player.reveal(RevealInfo("Origen", 2010, None, "Inception"))
     page = await player.browser.page()
 
     text = await page.evaluate("document.getElementById('fg-reveal').innerText")
-    assert "Origen" in text and "2010" in text
+    assert "Origen" in text and "Inception" in text and "2010" in text
+    color = await page.evaluate(
+        "getComputedStyle(document.querySelector('#fg-reveal .fg-year')).color"
+    )
+    assert color == "rgb(160, 134, 114)"  # --p-accent de web/system.css
 
     await player.resume()
     assert await page.evaluate("document.getElementById('fg-reveal')") is None

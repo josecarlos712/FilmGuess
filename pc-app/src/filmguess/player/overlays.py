@@ -1,10 +1,12 @@
-"""CSS que oculta la interfaz de Netflix, capa de «Revelar» y script de inicio de página."""
+"""CSS que oculta la interfaz de Netflix, capas propias (carga y «Revelar») y script de inicio."""
 
 from __future__ import annotations
 
 import json
 from functools import cache
 from pathlib import Path
+
+from filmguess.webfiles import design_tokens
 
 API_JS = Path(__file__).with_name("netflix_api.js")
 
@@ -38,18 +40,84 @@ HIDE_CSS = """
   display: none !important; opacity: 0 !important; visibility: hidden !important;
 }
 html, body, video, * { cursor: none !important; }
-#fg-reveal {
-  position: fixed; inset: 0; z-index: 2147483647; display: grid; place-items: center;
-  background: rgb(10 10 12 / 0.86); animation: fg-in 400ms cubic-bezier(.2,.7,.2,1) both;
-  font-family: system-ui, "Segoe UI", sans-serif; color: #f4f1ea;
-}
-#fg-reveal .fg-reveal-inner { display: flex; gap: 4vw; align-items: center; max-width: 82vw; }
-#fg-reveal img { height: 62vh; border-radius: 10px; box-shadow: 0 30px 80px rgb(0 0 0 / .6); }
-#fg-reveal h1 { margin: 0; font-size: clamp(36px, 5.5vw, 96px); line-height: 1.02;
-  letter-spacing: -0.02em; font-weight: 750; text-wrap: balance; }
-#fg-reveal p { margin: 1.2vh 0 0; font-size: clamp(20px, 2.4vw, 40px); opacity: .7; }
-@keyframes fg-in { from { opacity: 0; transform: scale(.98); } to { opacity: 1; transform: none; } }
 """
+
+FONTS_IMPORT = (
+    "@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400..700"
+    "&family=Figtree:wght@400..600&family=Martian+Mono:wght@400..500&display=swap');"
+)
+"""Las mismas fuentes que la tele; ``@import`` tiene que ir al principio de la hoja."""
+
+OVERLAY_CSS = """
+#fg-cover, #fg-reveal {
+  position: fixed; inset: 0; z-index: 2147483647; margin: 0;
+  --u: min(1vw, calc(100vh / 56.25));
+  background: var(--p-bg); color: var(--p-ink);
+  font-family: var(--font-text); -webkit-font-smoothing: antialiased;
+}
+#fg-cover { display: grid; place-content: center; justify-items: center; gap: calc(var(--u) * 3); }
+#fg-cover p {
+  margin: 0; font-family: var(--font-display); font-weight: var(--display-weight);
+  font-size: calc(var(--u) * 4.4); letter-spacing: var(--display-tracking);
+}
+#fg-cover .fg-bar {
+  position: relative; overflow: hidden; width: calc(var(--u) * 22); height: 3px;
+  border-radius: 3px; background: var(--p-line);
+}
+#fg-cover .fg-bar::after {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 30%; border-radius: inherit;
+  background: var(--p-accent); animation: fg-bar 2800ms var(--ease-out) infinite;
+}
+@keyframes fg-bar { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
+#fg-reveal {
+  display: grid; place-items: center; padding: calc(var(--u) * 5);
+  background: rgb(17 17 17 / 0.92);
+  animation: fg-in var(--enter-ms) var(--ease-out) both;
+}
+#fg-reveal .fg-reveal-inner {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center;
+  gap: calc(var(--u) * 5); width: 100%; max-width: calc(var(--u) * 86);
+}
+#fg-reveal .fg-no-poster { grid-template-columns: minmax(0, 1fr); text-align: center; }
+#fg-reveal img {
+  height: calc(var(--u) * 42); max-height: 78vh; aspect-ratio: 2 / 3; object-fit: cover;
+  border-radius: var(--radius-m);
+  box-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 5) rgb(0 0 0 / .55);
+}
+#fg-reveal h1 {
+  margin: 0; font-family: var(--font-display); font-weight: var(--display-weight);
+  font-size: calc(var(--u) * 6.4); line-height: 1; letter-spacing: var(--display-tracking-xl);
+  text-wrap: balance;
+}
+#fg-reveal .fg-original {
+  margin: calc(var(--u) * 1.6) 0 0; font-size: calc(var(--u) * 2.4); color: var(--p-muted);
+  font-style: italic;
+}
+#fg-reveal .fg-year {
+  margin: calc(var(--u) * 2.4) 0 0; font-family: var(--font-mono);
+  font-size: calc(var(--u) * 2.6); color: var(--p-accent); letter-spacing: -0.02em;
+}
+@keyframes fg-in {
+  from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #fg-reveal, #fg-cover .fg-bar::after { animation: none; }
+}
+"""
+"""Cubierta de carga y capa de «Revelar», con los tokens de ``web/system.css``."""
+
+TEXTS: dict[str, str] = {"cover": "Preparando fotograma…"}
+"""Textos que pinta el script en la página de Netflix."""
+
+
+def page_css() -> str:
+    """Hoja que se inyecta en Netflix: fuentes, ocultación, tokens y capas propias.
+
+    Returns:
+        El CSS completo.
+    """
+    tokens = f"#fg-cover, #fg-reveal {{ {design_tokens()} }}"
+    return "\n".join([FONTS_IMPORT, HIDE_CSS, tokens, OVERLAY_CSS])
 
 
 def merged_selectors(overrides: dict[str, str] | None = None) -> dict[str, str]:
@@ -80,5 +148,5 @@ def init_script(selectors: dict[str, str] | None = None) -> str:
     Returns:
         JavaScript con la configuración y la API de ``netflix_api.js``.
     """
-    config = {"selectors": merged_selectors(selectors), "css": HIDE_CSS}
+    config = {"selectors": merged_selectors(selectors), "css": page_css(), "texts": TEXTS}
     return f"window.__fgConfig = {json.dumps(config, ensure_ascii=False)};\n{_api_source()}"

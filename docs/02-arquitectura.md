@@ -97,3 +97,11 @@ En los registros de la consola el token se sustituye por `****` (el WebSocket lo
 - `/panel`, `/tv` y `/admin/*` solo aceptan peticiones desde `127.0.0.1`.
 - La clave de TMDB solo existe en el PC.
 - Comparación del token en tiempo constante (`hmac.compare_digest`).
+
+## Tele (F4)
+
+- `/tv` sirve `pc-app/web/tv/index.html` (solo localhost). Los estáticos (`system.css`, `tv/*`) están en `/static/`.
+- `/tv/ws`: WebSocket de la tele, **sin token pero solo desde 127.0.0.1**; recibe los mismos eventos que `/ws`.
+- Pantallas de la partida: `espera` → `cargando` → `pelicula` → `revelada`. Al pedir `/play` se emite `cargando` antes de salir de `/tv`; si falla, la partida vuelve a `espera` (se descarta la ronda y el navegador regresa a `/tv`) y la tele muestra el último aviso.
+- En Netflix, `netflix_api.js` tapa el vídeo con «Preparando fotograma…» (`#fg-cover`) desde antes de pintarse hasta que el reproductor lo deja pausado en su segundo (`uncover`).
+- La capa «Revelar» y la cubierta usan los tokens de `web/system.css` (bloque `tokens:start … tokens:end`, leído por `filmguess.webfiles.design_tokens`): póster `w780`, título, título original si es distinto y año.

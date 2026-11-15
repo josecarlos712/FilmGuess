@@ -122,6 +122,7 @@ async def test_play_en_su_segundo() -> None:
     assert actual == 5025.6
     assert page.urls == [WATCH_URL.format(id=70131314, seconds=5025)]
     assert ("pause", None) in page.calls
+    assert page.calls[-1] == ("uncover", None)
     assert ("seek", 5025) not in page.calls
     assert browser.fullscreens == 1
     assert (await player.status()).netflix_session is True
@@ -275,7 +276,12 @@ async def test_pause_resume_reveal_idle_y_start() -> None:
 
     names = [c[0] for c in page.calls]
     assert names == ["pause", "play", "pause", "showReveal"]
-    assert page.calls[-1][1] == {"title": "Origen", "year": 2010, "poster": "https://img/p.jpg"}
+    assert page.calls[-1][1] == {
+        "title": "Origen",
+        "year": 2010,
+        "poster": "https://img/p.jpg",
+        "original": None,
+    }
     assert page.urls == [IDLE]  # start() solo abre el navegador
     assert browser.started == 1
     await player.close()

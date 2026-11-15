@@ -1,0 +1,188 @@
+/*
+ * Tele (/tv). Se mide en --u, una centésima del ancho de una pantalla 16:9 (19,2 px a
+ * 1080p, 12,8 px a 720p), para que la composición sea la misma en cualquier tele.
+ * El texto más pequeño es 1,7u (≈ 33 px a 1080p), legible a 3 metros.
+ */
+:root {
+  --u: min(1vw, calc(100vh / 56.25));
+  --pad: calc(var(--u) * 5);
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  cursor: none;
+}
+
+.tv {
+  position: relative;
+  height: 100vh;
+  font-size: calc(var(--u) * 1.8);
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  padding: var(--pad);
+}
+
+/* --- Espera ------------------------------------------------------------------- */
+
+.waiting {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: calc(var(--u) * 5);
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.logo {
+  display: flex;
+  flex-direction: column;
+  font-size: calc(var(--u) * 10.5);
+  line-height: 0.92;
+  letter-spacing: var(--display-tracking-xl);
+}
+.logo-accent {
+  color: var(--p-accent);
+}
+
+.join {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 2.4);
+}
+.qr {
+  flex: none;
+  padding: calc(var(--u) * 0.9);
+  border-radius: var(--radius-m);
+  background: var(--p-qr-bg);
+}
+.qr img {
+  width: calc(var(--u) * 13);
+  height: calc(var(--u) * 13);
+}
+.join-text {
+  display: grid;
+  gap: calc(var(--u) * 0.8);
+  min-width: 0;
+}
+.join-title {
+  font-family: var(--font-display);
+  font-size: calc(var(--u) * 2.6);
+  letter-spacing: var(--display-tracking);
+  line-height: 1.1;
+}
+.join-hint {
+  max-width: 22em;
+  font-size: calc(var(--u) * 1.7);
+  line-height: 1.3;
+}
+.join-addr {
+  font-size: calc(var(--u) * 1.7);
+  color: var(--p-ink);
+}
+
+.board {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: calc(var(--u) * 3) calc(var(--u) * 3.2);
+  border-radius: var(--radius-l);
+}
+.board-title {
+  font-size: calc(var(--u) * 3.6);
+  padding-bottom: calc(var(--u) * 1.6);
+  border-bottom: 1px solid var(--p-line);
+}
+.board-empty {
+  margin-top: calc(var(--u) * 2);
+  font-size: calc(var(--u) * 2);
+  line-height: 1.3;
+}
+
+.players {
+  --row: calc(var(--u) * 5.4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+}
+.players.many {
+  --row: calc(var(--u) * 2.9);
+}
+.player {
+  display: grid;
+  grid-template-columns: calc(var(--row) * 0.75) minmax(0, 1fr) auto;
+  align-items: baseline;
+  align-content: center;
+  gap: calc(var(--u) * 1.2);
+  min-height: var(--row);
+  border-bottom: 1px solid var(--p-line);
+  font-size: max(calc(var(--row) * 0.42), calc(var(--u) * 1.7));
+}
+.player:last-child {
+  border-bottom: 0;
+}
+.player-rank {
+  color: var(--p-muted);
+}
+.player-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.player-points {
+  font-size: 1.1em;
+}
+.player.leader .player-points {
+  color: var(--p-accent);
+}
+
+.notice {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  bottom: calc(var(--u) * 1.6);
+  font-size: calc(var(--u) * 1.7);
+  color: var(--p-danger);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* --- Cargando ----------------------------------------------------------------- */
+
+.loading {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: calc(var(--u) * 3);
+}
+.loading-title {
+  font-family: var(--font-display);
+  font-size: calc(var(--u) * 4.4);
+  letter-spacing: var(--display-tracking);
+}
+.loading-bar {
+  width: calc(var(--u) * 22);
+}
+
+/* --- Conexión perdida --------------------------------------------------------- */
+
+.connection {
+  position: absolute;
+  top: calc(var(--u) * 1.6);
+  right: var(--pad);
+  padding: calc(var(--u) * 0.6) calc(var(--u) * 1.2);
+  border-radius: var(--radius-s);
+  background: var(--p-surface-2);
+  font-size: calc(var(--u) * 1.7);
+  color: var(--p-muted);
+}

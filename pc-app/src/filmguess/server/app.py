@@ -15,7 +15,8 @@ from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI, Header, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Receive, Scope, Send
 
@@ -30,6 +31,7 @@ from filmguess.pairing.network import (
 from filmguess.player.base import PlayerError
 from filmguess.server import schemas
 from filmguess.server.events import EventHub
+from filmguess.webfiles import TV_PAGE, WEB_DIR
 
 log = logging.getLogger(__name__)
 
@@ -55,12 +57,6 @@ ERROR_STATUS: dict[str, int] = {
     "netflix_error": 502,
 }
 """Estado HTTP de cada código de error; los no listados devuelven 500."""
-
-
-TV_PLACEHOLDER = """<!doctype html><html lang="es"><head><meta charset="utf-8">
-<title>Adivina la Peli</title><style>html,body{margin:0;height:100%;background:#0b0b0d;
-color:#f4f1ea;font:600 6vw system-ui,"Segoe UI",sans-serif;display:grid;place-items:center;
-cursor:none}</style></head><body>Adivina la Peli</body></html>"""
 
 
 async def _show_idle_when_ready(session: GameSession, attempts: int = 20) -> None:
@@ -298,9 +294,8 @@ def create_app(session: GameSession, token: str, *, port: int, ip: str) -> FastA
         return schemas.scoreboard(session.scoreboard.players)
 
     @app.get("/tv", dependencies=[Depends(require_localhost)])
-    async def get_tv() -> HTMLResponse:
-        # Provisional hasta F4: pantalla de espera mínima.
-        return HTMLResponse(TV_PLACEHOLDER)
+    async def get_tv() -> FileResponse:
+        return FileResponse(TV_PAGE, media_type="text/html; charset=utf-8")
 
     @app.get("/pairing", dependencies=[Depends(require_localhost)])
     async def get_pairing() -> dict[str, Any]:
@@ -318,6 +313,17 @@ def create_app(session: GameSession, token: str, *, port: int, ip: str) -> FastA
         if not token_matches(token_param, token):
             await websocket.close(code=1008)
             return
+        await listen(websocket)
+
+    @app.websocket("/tv/ws")
+    async def tv_websocket(websocket: WebSocket) -> None:
+        # La tele es una pestaña del propio PC: no lleva token, pero solo se acepta en local.
+        if not is_localhost(websocket.client.host if websocket.client else None):
+            await websocket.close(code=1008)
+            return
+        await listen(websocket)
+
+    async def listen(websocket: WebSocket) -> None:
         await hub.connect(websocket)
         try:
             await hub.send(websocket, "estado", schemas.status(await session.state()))
@@ -329,5 +335,6 @@ def create_app(session: GameSession, token: str, *, port: int, ip: str) -> FastA
         finally:
             await hub.disconnect(websocket)
 
+    app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
     app.add_middleware(LocalNetworkOnly)
     return app

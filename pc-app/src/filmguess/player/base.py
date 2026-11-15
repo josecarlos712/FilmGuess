@@ -41,6 +41,8 @@ class RevealInfo:
     title: str
     year: int | None
     poster_url: str | None
+    original_title: str | None = None
+    """Título original, solo si es distinto del que se muestra."""
 
 
 class Player(Protocol):

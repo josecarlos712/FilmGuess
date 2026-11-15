@@ -25,6 +25,34 @@
     obs.observe(document, { childList: true, subtree: true });
   }
 
+  // --- Cubierta «Preparando fotograma…» en el reproductor --------------------------
+  // Tapa el vídeo desde antes de que se pinte hasta que Python lo deja quieto en su segundo
+  // (uncover), para que no se vea Netflix cargando ni otro fotograma.
+  const TEXTS = cfg.texts || {};
+  const cover = () => {
+    if (document.getElementById("fg-cover")) return true;
+    const root = document.body || document.documentElement;
+    if (!root) return false;
+    const box = document.createElement("div");
+    box.id = "fg-cover";
+    const label = document.createElement("p");
+    label.textContent = TEXTS.cover || "";
+    const bar = document.createElement("div");
+    bar.className = "fg-bar";
+    box.append(label, bar);
+    root.appendChild(box);
+    return true;
+  };
+  const uncover = () => {
+    const old = document.getElementById("fg-cover");
+    if (old) old.remove();
+    return true;
+  };
+  if (/^\/watch\//.test(location.pathname) && !cover()) {
+    const obs = new MutationObserver(() => cover() && obs.disconnect());
+    obs.observe(document, { childList: true, subtree: true });
+  }
+
   const q = (sel) => (sel ? document.querySelector(sel) : null);
   const qa = (sel) => (sel ? Array.from(document.querySelectorAll(sel)) : []);
   const text = (el) => (el ? (el.innerText || el.textContent || "").trim() : "");
@@ -119,6 +147,7 @@
 
   const play = () => {
     hideReveal();
+    uncover();
     const p = api();
     if (p) p.play();
     else if (video()) video().play();
@@ -135,6 +164,10 @@
       const img = document.createElement("img");
       img.src = info.poster;
       img.alt = "";
+      img.addEventListener("error", () => {
+        img.remove();
+        inner.classList.add("fg-no-poster");
+      });
       inner.appendChild(img);
     }
     const caption = document.createElement("div");
@@ -142,8 +175,15 @@
     const title = document.createElement("h1");
     title.textContent = info.title;
     caption.appendChild(title);
+    if (info.original) {
+      const original = document.createElement("p");
+      original.className = "fg-original";
+      original.textContent = info.original;
+      caption.appendChild(original);
+    }
     if (info.year) {
       const year = document.createElement("p");
+      year.className = "fg-year";
       year.textContent = String(info.year);
       caption.appendChild(year);
     }
@@ -159,5 +199,16 @@
     return true;
   }
 
-  window.__fg = { state, chooseProfile, clickContinue, seek, pause, play, showReveal, hideReveal };
+  window.__fg = {
+    state,
+    chooseProfile,
+    clickContinue,
+    seek,
+    pause,
+    play,
+    showReveal,
+    hideReveal,
+    cover,
+    uncover,
+  };
 })();

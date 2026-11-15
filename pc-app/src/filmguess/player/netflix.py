@@ -141,6 +141,7 @@ class NetflixPlayer:
         current = await self._settle_position(page, url, seconds, state, deadline)
         await self._call(page, "pause")
         await self.browser.fullscreen()
+        await self._call(page, "uncover")  # el fotograma ya está quieto: se quita la cubierta
         log.info(
             "Netflix %d listo en %.1f s (pedido %d s, real %.1f s)",
             netflix_id,
@@ -177,7 +178,12 @@ class NetflixPlayer:
         """
         page = await self.browser.page()
         await self._call(page, "pause")
-        data = {"title": info.title, "year": info.year, "poster": info.poster_url}
+        data = {
+            "title": info.title,
+            "year": info.year,
+            "poster": info.poster_url,
+            "original": info.original_title,
+        }
         await self._call(page, "showReveal", data)
 
     async def idle(self) -> None:

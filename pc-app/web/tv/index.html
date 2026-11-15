@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es" data-type="software" data-radius="soft">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="page-type" content="software" />
+    <meta name="site-kind" content="gaming" />
+    <meta name="theme-color" content="#111111" />
+    <title>Adivina la Peli</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400..700&family=Figtree:wght@400..600&family=Martian+Mono:wght@400..500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/system.css" />
+    <link rel="stylesheet" href="/static/tv/tv.css" />
+  </head>
+  <body>
+    <!-- Pantalla de la tele: se transmite tal cual. Sin navegación ni controles. -->
+    <main class="tv">
+      <section id="espera" class="screen waiting" aria-labelledby="logo">
+        <div class="brand">
+          <h1 id="logo" class="logo" data-enter>
+            <span data-text="logo1"></span>
+            <span class="logo-accent" data-text="logo2"></span>
+          </h1>
+          <div class="join" data-enter="2">
+            <div class="qr">
+              <img id="qr" src="/pairing/qr.svg" alt="" width="240" height="240" />
+            </div>
+            <div class="join-text">
+              <p class="join-title" data-text="unirse"></p>
+              <p class="join-hint muted" data-text="unirseAyuda"></p>
+              <p id="direccion" class="join-addr num"></p>
+            </div>
+          </div>
+        </div>
+
+        <aside class="board card" aria-labelledby="titulo-marcador" data-enter="3">
+          <h2 id="titulo-marcador" class="board-title" data-text="marcador"></h2>
+          <ol id="jugadores" class="players"></ol>
+          <p id="sin-jugadores" class="board-empty muted" data-text="sinJugadores"></p>
+        </aside>
+
+        <p id="aviso" class="notice hidden" role="status"></p>
+      </section>
+
+      <section id="cargando" class="screen loading hidden" aria-live="polite">
+        <p class="loading-title" data-text="cargando"></p>
+        <div class="progress loading-bar"></div>
+      </section>
+
+      <p id="conexion" class="connection hidden" role="status" data-text="reconectando"></p>
+    </main>
+
+    <script type="module" src="/static/tv/tv.js"></script>
+  </body>
+</html>

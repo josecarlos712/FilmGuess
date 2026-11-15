@@ -191,7 +191,7 @@ def test_ronda_completa(client: TestClient, player: FakePlayer) -> None:
     assert [c[0] for c in player.calls] == ["play", "pause", "resume", "reveal", "idle"]
     info = player.calls[3][1]
     assert isinstance(info, RevealInfo)
-    assert info.poster_url is not None and "/w500/" in info.poster_url
+    assert info.poster_url is not None and "/w780/" in info.poster_url
 
 
 def test_play_fuera_de_duracion(client: TestClient, player: FakePlayer) -> None:
@@ -276,6 +276,7 @@ def test_websocket_recibe_estado_y_eventos(client: TestClient) -> None:
         assert ws.receive_json() == {"tipo": "marcador", "datos": {"jugadores": []}}
 
         client.post("/play", json={"netflixId": 70131314, "seconds": 60}, headers=HEADERS)
+        assert ws.receive_json()["datos"]["pantalla"] == "cargando"
         event = ws.receive_json()
         assert event["tipo"] == "estado"
         assert event["datos"]["pantalla"] == "pelicula"
@@ -290,8 +291,13 @@ def test_websocket_error_del_reproductor(client: TestClient, player: FakePlayer)
         ws.receive_json()
         ws.receive_json()
         client.post("/play", json={"netflixId": 70131314, "seconds": 60}, headers=HEADERS)
+        assert ws.receive_json()["datos"]["pantalla"] == "cargando"
         event = ws.receive_json()
+        back = ws.receive_json()
 
+    assert back["tipo"] == "estado"
+    assert back["datos"]["pantalla"] == "espera"
+    assert back["datos"]["ultimoError"]["error"] == "perfil_requerido"
     assert event == {
         "tipo": "error",
         "datos": {"error": "perfil_requerido", "mensaje": "Elige el perfil de Netflix en el PC."},
@@ -301,3 +307,67 @@ def test_websocket_error_del_reproductor(client: TestClient, player: FakePlayer)
 def test_websocket_sin_token(client: TestClient) -> None:
     with pytest.raises(WebSocketDisconnect), client.websocket_connect("/ws?token=malo") as ws:
         ws.receive_json()
+
+
+# --- Tele (/tv) -------------------------------------------------------------------
+
+
+LOCAL = ("127.0.0.1", 50000)
+
+
+def test_tv_solo_desde_el_propio_pc(session: GameSession) -> None:
+    local = make_client(session, LOCAL).get("/tv")
+    assert local.status_code == 200
+    assert local.headers["content-type"].startswith("text/html")
+    assert "/static/tv/tv.js" in local.text
+
+    remote = make_client(session).get("/tv")
+    assert remote.status_code == 403
+    assert remote.json()["error"] == "solo_local"
+
+
+def test_estaticos_de_la_web(client: TestClient) -> None:
+    css = client.get("/static/system.css")
+    assert css.status_code == 200
+    assert "tokens:start" in css.text
+    assert client.get("/static/tv/textos.js").status_code == 200
+    assert client.get("/static/no-existe.css").status_code == 404
+
+
+def test_websocket_de_la_tele_sin_token(session: GameSession) -> None:
+    with make_client(session, LOCAL).websocket_connect("/tv/ws") as ws:
+        assert ws.receive_json()["datos"]["pantalla"] == "espera"
+        assert ws.receive_json()["tipo"] == "marcador"
+
+
+def test_websocket_de_la_tele_rechaza_la_red_local(client: TestClient) -> None:
+    with pytest.raises(WebSocketDisconnect), client.websocket_connect("/tv/ws") as ws:
+        ws.receive_json()
+
+
+def test_play_fallido_vuelve_a_la_espera(client: TestClient, player: FakePlayer) -> None:
+    client.post("/play", json={"netflixId": 70131314, "seconds": 60}, headers=HEADERS)
+    player.fail = PlayerError("no_disponible_es", "No está disponible aquí.")
+
+    assert (
+        client.post(
+            "/play", json={"netflixId": 70131314, "seconds": 60}, headers=HEADERS
+        ).status_code
+        == 409
+    )
+
+    status = client.get("/status", headers=HEADERS).json()
+    assert status["pantalla"] == "espera"
+    assert status["rondaActual"] is None
+    assert player.calls[-1] == ("idle", None)
+
+
+def test_revelar_usa_poster_grande(client: TestClient, player: FakePlayer) -> None:
+    client.post("/play", json={"netflixId": 70131314, "seconds": 60}, headers=HEADERS)
+    client.post("/reveal", headers=HEADERS)
+
+    info = player.calls[-1][1]
+    assert isinstance(info, RevealInfo)
+    assert info.title == "Origen"
+    assert info.original_title == "Inception"
+    assert info.poster_url is not None and "/w780/" in info.poster_url

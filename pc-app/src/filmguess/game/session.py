@@ -22,7 +22,7 @@ from filmguess.player.base import PlayerError, PlayerStatus, RevealInfo
 log = logging.getLogger(__name__)
 T = TypeVar("T")
 
-Screen = Literal["espera", "pelicula", "revelada"]
+Screen = Literal["espera", "cargando", "pelicula", "revelada"]
 EventSink = Callable[[str, dict[str, Any]], Awaitable[None]]
 
 
@@ -184,7 +184,18 @@ class GameSession:
         if seconds < 0 or (movie.runtime_s is not None and seconds > movie.runtime_s):
             limit = _hhmmss(movie.runtime_s or 0)
             raise GameError("fuera_de_duracion", f"Elige un momento entre 00:00:00 y {limit}.")
-        actual = await self._run("play", self.player.play(netflix_id, seconds), movie)
+        # La tele pasa a «Preparando fotograma…» antes de que el navegador salga de /tv.
+        self.screen = "cargando"
+        await self._emit_state()
+        try:
+            actual = await self._run("play", self.player.play(netflix_id, seconds), movie)
+        except GameError:
+            # La pestaña ya no está en la película anterior: se vuelve a la espera.
+            self.round = None
+            self.screen = "espera"
+            await self._back_to_idle()
+            await self._emit_state()
+            raise
         self.round = Round(movie, seconds, actual)
         self.screen = "pelicula"
         await self._emit_state()
@@ -221,7 +232,12 @@ class GameSession:
         """
         current = self._require_round()
         movie = current.movie
-        info = RevealInfo(movie.display_title, movie.year, poster_url(movie.poster_path, "w500"))
+        original = movie.original_title
+        if original and original.casefold() == movie.display_title.casefold():
+            original = None
+        info = RevealInfo(
+            movie.display_title, movie.year, poster_url(movie.poster_path, "w780"), original
+        )
         await self._run("reveal", self.player.reveal(info))
         self.screen = "revelada"
         await self._emit_state()
@@ -306,6 +322,12 @@ class GameSession:
                 raise GameError(exc.code, exc.message) from exc
             self.last_error = None
             return result
+
+    async def _back_to_idle(self) -> None:
+        try:
+            await self.player.idle()
+        except PlayerError as exc:
+            log.warning("No se pudo volver a la pantalla de espera: %s", exc.message)
 
     def _require_round(self) -> Round:
         if self.round is None:
