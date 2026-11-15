@@ -15,6 +15,7 @@ from filmguess.catalog.clues import (
     parse_tmdb_clues,
     redact,
     review_excerpt,
+    synopsis_excerpt,
     title_words,
 )
 from filmguess.catalog.clues_fetch import parse_sparql_pages, parse_wikiquote_pages
@@ -55,11 +56,16 @@ def test_parse_tmdb_clues_toma_el_primero_del_reparto() -> None:
     details = {
         "genres": [{"id": 878, "name": "Ciencia ficción"}],
         "tagline": " Tu mente es la escena del crimen ",
+        "overview": " Un ladrón roba secretos\n de los sueños. ",
         "credits": {
+            "crew": [
+                {"name": "Emma Thomas", "job": "Producer"},
+                {"name": "Christopher Nolan", "job": "Director"},
+            ],
             "cast": [
                 {"name": "Joseph Gordon-Levitt", "character": "Arthur", "order": 1},
                 {"name": "Leonardo DiCaprio", "character": "Cobb / Dom (voice)", "order": 0},
-            ]
+            ],
         },
     }
 
@@ -68,6 +74,41 @@ def test_parse_tmdb_clues_toma_el_primero_del_reparto() -> None:
     assert clues.genres == [Genre(878, "Ciencia ficción")]
     assert (clues.actor, clues.character) == ("Leonardo DiCaprio", "Cobb")
     assert clues.tagline == "Tu mente es la escena del crimen"
+    assert clues.overview == "Un ladrón roba secretos de los sueños."
+    assert clues.director == "Christopher Nolan"
+
+
+def test_sinopsis_tapa_el_titulo_y_se_corta_en_una_frase() -> None:
+    overview = "En Origen, un ladrón roba secretos de los sueños. " + "Luego pasa algo más. " * 20
+
+    text = synopsis_excerpt(overview, title_words(["Origen", "Inception"]))
+
+    assert text is not None
+    assert text.startswith("En …, un ladrón roba secretos de los sueños.")
+    assert "Origen" not in text and len(text) <= 240 and text.endswith(".")
+
+
+def test_pista_de_director_lleva_su_etiqueta() -> None:
+    clues = Clues(quote="Christopher Nolan", quote_source="director", quote_lang="es")
+
+    hint = build_hints(ORIGEN, clues, category=False)[-1]
+
+    assert (hint.label, hint.text) == ("Dirigida por", "Christopher Nolan")
+
+
+def test_sinopsis_vacia_o_muy_corta_no_sirve() -> None:
+    assert synopsis_excerpt(None, ["Origen"]) is None
+    assert synopsis_excerpt("Un drama.", ["Origen"]) is None
+
+
+def test_pista_de_sinopsis_lleva_su_etiqueta() -> None:
+    clues = Clues(
+        quote="Un ladrón roba secretos de los sueños.", quote_source="sinopsis", quote_lang="es"
+    )
+
+    hint = build_hints(ORIGEN, clues, category=False)[-1]
+
+    assert (hint.label, hint.text) == ("La sinopsis", "Un ladrón roba secretos de los sueños.")
 
 
 def test_extract_quote_salta_intro_atribuciones_y_esloganes() -> None:

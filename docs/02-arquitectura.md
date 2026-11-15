@@ -132,7 +132,7 @@ Solo para el catálogo de juego (`netflix_es = 1` con ID de TMDB), en la tabla `
 |---|---|
 | `genres` (JSON `[{id, name}]`) | TMDB `/movie/{id}?language=es-ES` |
 | `actor`, `character` | Primer actor del reparto (`credits.cast`, `order` menor) |
-| `quote`, `quote_source`, `quote_lang` | Wikiquote (`es` y si no `en`), enlazada desde Wikidata por el ID de TMDB (P4947); si no hay, extracto de la primera crítica de TMDB (`critica`) o el eslogan (`eslogan`) |
+| `quote`, `quote_source`, `quote_lang` | Wikiquote (`es` y si no `en`), enlazada desde Wikidata por el ID de TMDB (P4947); si no hay, extracto de la primera crítica de TMDB (`critica`) , el eslogan (`eslogan`) o, si no hay nada más, la sinopsis en español recortada (`sinopsis`) o el director (`director`) |
 
 IMDb no tiene API de críticas y prohíbe extraerlas de su web, por eso la crítica sale de TMDB. Cualquier aparición del título se tapa con «…» (título completo en cualquier caja; palabras sueltas solo con mayúscula inicial). Si el personaje es el título, la pista dice «Su nombre está en el título».
 

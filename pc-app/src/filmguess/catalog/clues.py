@@ -5,7 +5,8 @@ Solo se descargan para el catálogo de juego (películas disponibles en Netflix 
 1. TMDB: géneros en español, actor o actriz principal, su personaje y el eslogan.
 2. Wikidata enlaza la película (por su ID de TMDB) con su página de Wikiquote, en español
    o en inglés; de ella sale la frase célebre.
-3. Si no hay frase, un extracto de la primera crítica de TMDB; si tampoco, el eslogan.
+3. Si no hay frase, un extracto de la primera crítica de TMDB; si tampoco, el eslogan;
+   y si tampoco, la sinopsis en español con el título tapado o, al final, quién la dirige.
 
 Cualquier palabra del título que aparezca en una pista se tapa con «…».
 """
@@ -19,7 +20,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-QuoteSource = Literal["wikiquote", "critica", "eslogan"]
+QuoteSource = Literal["wikiquote", "critica", "eslogan", "sinopsis", "director"]
 
 MASK = "…"
 QUOTE_MIN = 25
@@ -120,10 +121,12 @@ class TmdbClues:
     actor: str | None
     character: str | None
     tagline: str | None
+    overview: str | None = None
+    director: str | None = None
 
 
 def parse_tmdb_clues(details: dict[str, Any]) -> TmdbClues:
-    """Saca géneros, reparto principal y eslogan de ``/movie/{id}?append_to_response=credits``.
+    """Saca géneros, reparto, eslogan y sinopsis de ``/movie/{id}?append_to_response=credits``.
 
     Args:
         details: JSON de la ficha.
@@ -145,7 +148,15 @@ def parse_tmdb_clues(details: dict[str, Any]) -> TmdbClues:
     actor = str(lead["name"]).strip() if lead else None
     character = _clean_character(lead.get("character")) if lead else None
     tagline = " ".join(str(details.get("tagline") or "").split()) or None
-    return TmdbClues(genres, actor, character, tagline)
+    overview = " ".join(str(details.get("overview") or "").split()) or None
+    crew = (details.get("credits") or {}).get("crew") or []
+    directors = [
+        str(c["name"]).strip()
+        for c in crew
+        if isinstance(c, dict) and c.get("job") == "Director" and c.get("name")
+    ]
+    director = " y ".join(directors[:2]) or None
+    return TmdbClues(genres, actor, character, tagline, overview, director)
 
 
 def _clean_character(raw: object) -> str | None:
@@ -325,6 +336,23 @@ def review_excerpt(reviews: dict[str, Any], words: Sequence[str]) -> str | None:
         if not is_mostly_masked(masked):
             return masked
     return None
+
+
+def synopsis_excerpt(overview: str | None, words: Sequence[str]) -> str | None:
+    """Sinopsis recortada y con el título tapado, para usarla como última pista.
+
+    Args:
+        overview: Sinopsis de TMDB en español.
+        words: Palabras del título a tapar.
+
+    Returns:
+        El extracto, ya tapado, o ``None`` si no hay sinopsis útil.
+    """
+    text = " ".join((overview or "").split())
+    if len(text) < QUOTE_MIN:
+        return None
+    masked = redact(_cut(text, REVIEW_MAX), words)
+    return None if is_mostly_masked(masked) else masked
 
 
 def _cut(text: str, limit: int) -> str:

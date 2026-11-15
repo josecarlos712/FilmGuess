@@ -65,6 +65,10 @@ def _quote_label(clues: Clues) -> str:
         label = "Una crítica"
     elif clues.quote_source == "eslogan":
         label = "El eslogan"
+    elif clues.quote_source == "sinopsis":
+        label = "La sinopsis"
+    elif clues.quote_source == "director":
+        label = "Dirigida por"
     else:
         label = "Una frase de la película"
     return f"{label} (en inglés)" if clues.quote_lang == "en" else label

@@ -546,14 +546,17 @@ class CatalogDB:
         """Cuántas películas del catálogo de juego tienen cada tipo de pista.
 
         Returns:
-            Recuentos ``con_pistas``, ``frase``, ``critica``, ``eslogan`` y ``sin_texto``.
+            Recuentos ``con_pistas``, ``frase``, ``critica``, ``eslogan``, ``sinopsis``,
+            ``director`` y ``sin_texto``.
         """
         row = self._conn.execute(
             "SELECT COUNT(*), SUM(quote_source = 'wikiquote'), SUM(quote_source = 'critica'), "
-            "SUM(quote_source = 'eslogan'), SUM(quote IS NULL) FROM clues c "
+            "SUM(quote_source = 'eslogan'), SUM(quote_source = 'sinopsis'), "
+            "SUM(quote_source = 'director'), "
+            "SUM(quote IS NULL) FROM clues c "
             "JOIN movies m ON m.netflix_id = c.netflix_id WHERE m.netflix_es = 1"
         ).fetchone()
-        keys = ("con_pistas", "frase", "critica", "eslogan", "sin_texto")
+        keys = ("con_pistas", "frase", "critica", "eslogan", "sinopsis", "director", "sin_texto")
         return {k: int(v or 0) for k, v in zip(keys, row, strict=True)}
 
     def recent_random(self, n: int) -> list[int]:

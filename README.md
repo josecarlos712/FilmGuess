@@ -17,8 +17,8 @@ Juego de salón: desde el móvil se elige una película del catálogo de Netflix
    | 1. Género | *(gratis: la categoría)* |
    | 2. Año y nota de IMDb | 1. Año y nota de IMDb |
    | 3. Actor o actriz principal | 2. Protagonista y su personaje |
-   | 4. Su personaje | 3. Frase célebre o crítica (gratis) |
-   | 5. Frase célebre o crítica (gratis) | |
+   | 4. Su personaje | 3. Frase célebre, crítica, sinopsis o director (gratis) |
+   | 5. Frase célebre, crítica, sinopsis o director (gratis) | |
 
    Gratis en cualquier momento: **otros dos fotogramas** al azar (tres en total) y un **clip de 5 segundos**. Si sale una escena delicada, **Saltar escena** tapa la tele al instante y cambia a otro momento sin gastar fotograma.
 6. **Revelar el título** termina la ronda: marca quién ha acertado y pulsa «Dar los puntos». El marcador se ve en la tele y se guarda entre partidas; «Corregir puntos a mano» permite ajustarlo.
@@ -87,7 +87,7 @@ python -m venv .venv
    arrancar.bat pistas
    ```
 
-   Las frases salen de Wikiquote; si no hay, una crítica de TMDB o el eslogan. En las pistas se tapa cualquier palabra del título. Las que llegan en inglés se muestran en español gracias a `data/traducciones.json` (texto original + traducción), que se reutiliza en cada descarga mientras el original no cambie. Para traducir textos nuevos: `arrancar.bat pistas --exportar-sin-traducir pendientes.json`, añade sus traducciones al fichero y aplica con `arrancar.bat pistas --aplicar-traducciones`.
+   Las frases salen de Wikiquote; si no hay, una crítica de TMDB, el eslogan, la sinopsis con el título tapado o, como último recurso, quién la dirige. En las pistas se tapa cualquier palabra del título. Las que llegan en inglés se muestran en español gracias a `data/traducciones.json` (texto original + traducción), que se reutiliza en cada descarga mientras el original no cambie. Para traducir textos nuevos: `arrancar.bat pistas --exportar-sin-traducir pendientes.json`, añade sus traducciones al fichero y aplica con `arrancar.bat pistas --aplicar-traducciones`.
 
 ### 5. Primer inicio de sesión en Netflix
 

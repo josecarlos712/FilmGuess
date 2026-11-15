@@ -253,6 +253,7 @@ def _cmd_clues(config: AppConfig, args: argparse.Namespace) -> int:
     print(
         f"Pistas: {summary.done - summary.errors} películas · frases de Wikiquote "
         f"{summary.quotes} · críticas {summary.reviews} · eslóganes {summary.taglines} · "
+        f"sinopsis {summary.synopses} · director {summary.directors} · "
         f"errores {summary.errors}"
     )
     return 0

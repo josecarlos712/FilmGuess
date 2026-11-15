@@ -19,6 +19,7 @@ from filmguess.catalog.clues import (
     parse_tmdb_clues,
     redact,
     review_excerpt,
+    synopsis_excerpt,
     title_words,
 )
 from filmguess.catalog.db import CatalogDB, ClueTarget
@@ -46,6 +47,8 @@ class CluesProgress:
     quotes: int = 0
     reviews: int = 0
     taglines: int = 0
+    synopses: int = 0
+    directors: int = 0
 
 
 ProgressCallback = Callable[[CluesProgress], None]
@@ -282,6 +285,14 @@ async def fetch_clues(
         if quote is None and info.tagline:
             quote, source, lang = redact(info.tagline, words), "eslogan", "es"
             progress.taglines += 1
+        if quote is None:
+            quote = synopsis_excerpt(info.overview, words)
+            if quote:
+                source, lang = "sinopsis", "es"
+                progress.synopses += 1
+        if quote is None and info.director:
+            quote, source, lang = info.director, "director", "es"
+            progress.directors += 1
         quote, lang = translate(target.netflix_id, quote, lang, translations or {})
         character = redact(info.character, words) if info.character else None
         db.save_clues(
