@@ -8,10 +8,21 @@ Juego de salón: desde el móvil se elige una película del catálogo de Netflix
 
 1. En el PC: `arrancar.bat`. Se abre Edge a pantalla completa con la pantalla de espera (logo, QR y marcador). Transmítela a la tele.
 2. En el móvil (misma wifi): escanea el QR de la tele.
-3. **Película**: busca un título o pulsa «Película al azar» (el título queda oculto también para quien elige).
+3. **Película**: busca un título o pulsa «Película al azar» (el título queda oculto también para quien elige). Opcionalmente elige una **categoría** (Ciencia ficción, Drama, Terror…): el género se sabe gratis, pero la ronda vale como máximo 3 puntos.
 4. **Momento**: gira la rueda de horas, minutos y segundos (o «Momento al azar») y pulsa «Mostrar en la tele». En unos segundos la tele muestra ese fotograma, pausado y sin pistas.
-5. **Ronda**: Pausar, Reanudar, **Revelar** y **Nueva ronda**. Suma o resta puntos a cada jugador; el marcador se ve en la tele y se guarda entre partidas.
-6. **Jugadores**: añade, renombra o quita jugadores y pon el marcador a cero.
+5. **Ronda**: acertar vale **5 puntos** (3 con categoría). Cada **pista** resta 1 punto, hasta un mínimo de 1, y aparece en una esquina de la tele sin tapar la escena:
+
+   | Sin categoría (5 → 1) | Con categoría (3 → 1) |
+   |---|---|
+   | 1. Género | *(gratis: la categoría)* |
+   | 2. Año y nota de IMDb | 1. Año y nota de IMDb |
+   | 3. Actor o actriz principal | 2. Protagonista y su personaje |
+   | 4. Su personaje | 3. Frase célebre o crítica (gratis) |
+   | 5. Frase célebre o crítica (gratis) | |
+
+   Gratis en cualquier momento: **otros dos fotogramas** al azar (tres en total) y un **clip de 5 segundos**. Si sale una escena delicada, **Saltar escena** tapa la tele al instante y cambia a otro momento sin gastar fotograma.
+6. **Revelar el título** termina la ronda: marca quién ha acertado y pulsa «Dar los puntos». El marcador se ve en la tele y se guarda entre partidas; «Corregir puntos a mano» permite ajustarlo.
+7. **Jugadores**: añade, renombra o quita jugadores y pon el marcador a cero.
 
 ## Instalación paso a paso (Windows)
 
@@ -70,6 +81,14 @@ python -m venv .venv
 
    Las siguientes veces basta con `arrancar.bat importar`, o con el botón **Importar o actualizar** del panel.
 
+3. Descarga las pistas (géneros, reparto y frase célebre o crítica) de las películas que se pueden jugar; tarda unos minutos y solo procesa las que aún no las tienen:
+
+   ```bash
+   arrancar.bat pistas
+   ```
+
+   Las frases salen de Wikiquote (muchas en inglés); si no hay, una crítica de TMDB o el eslogan. En las pistas se tapa cualquier palabra del título.
+
 ### 5. Primer inicio de sesión en Netflix
 
 La app usa un perfil de Edge propio (`data/browser-profile`), así que la sesión de tu Edge normal no sirve: hay que iniciarla una vez en el suyo.
@@ -108,6 +127,7 @@ arrancar.bat
 |---|---|
 | `arrancar.bat` | Arranca el servidor y el navegador de la tele (igual que `arrancar.bat servir`) |
 | `arrancar.bat importar` | Importa o actualiza el catálogo (`--limite N`, `--sin-tmdb`, `--sin-imdb`, `--descargar-imdb`, `--descargar-wikidata`) |
+| `arrancar.bat pistas` | Descarga las pistas del catálogo de juego (`--todas` para rehacerlas, `--limite N`) |
 | `arrancar.bat netflix-login` | Abre el perfil de la app para iniciar sesión en Netflix |
 | `arrancar.bat plataformas` / `exportar-plataformas` | Catálogo de todas las plataformas en España y su CSV (estudio aparte) |
 | `arrancar.bat config` | Muestra la configuración efectiva (sin la clave) |

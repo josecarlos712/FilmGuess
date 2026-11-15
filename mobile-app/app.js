@@ -14,6 +14,10 @@ const state = {
   search: { q: "", page: 1, all: false, total: 0, seq: 0 },
   chosen: null, // { movie, hidden }
   wheel: null,
+  genres: null, // [{ id, nombre, peliculas }]
+  category: null, // { id, nombre } o null
+  picked: new Set(), // jugadores marcados como acertantes
+  adjust: false,
 };
 
 for (const el of document.querySelectorAll("[data-text]")) {
@@ -158,6 +162,7 @@ function onEvent(kind, data) {
     state.players = data.jugadores || [];
     renderScore();
     renderPeople();
+    renderAward();
   } else if (kind === "error") {
     showError("error-ronda", new ApiError(data.error, data.mensaje, 0));
   }
@@ -194,7 +199,8 @@ async function runSearch(fresh) {
   const seq = ++s.seq;
   showError("error-buscar", null);
   try {
-    const data = await state.api.search(s.q, s.page, s.all);
+    if (!state.genres) loadGenres();
+    const data = await state.api.search(s.q, s.page, s.all, state.category?.id);
     if (seq !== s.seq) return; // llegó una búsqueda más nueva
     s.total = data.total;
     renderResults(data.resultados, fresh);
@@ -243,7 +249,7 @@ function renderResults(movies, fresh) {
 
 $("btn-azar").addEventListener("click", (event) =>
   run(event.currentTarget, "error-buscar", async () => {
-    const movie = await state.api.random();
+    const movie = await state.api.random(state.category?.id);
     choose(movie, true);
   }),
 );
@@ -310,7 +316,7 @@ $("btn-mostrar").addEventListener("click", (event) => {
     event.currentTarget,
     "error-tiempo",
     async () => {
-      await state.api.play(movie.netflixId, seconds);
+      await state.api.play(movie.netflixId, seconds, state.category?.id);
       show("ronda");
     },
     TEXTOS.mostrando,
@@ -328,13 +334,15 @@ function renderRound() {
   $("ronda-activa").classList.toggle("hidden", !round && !loading);
   const info = $("ronda-info");
   info.replaceChildren();
+  const revealed = Boolean(round && round.revelada);
   if (loading) {
     info.append(el("p", "round-title", TEXTOS.cargandoTele), el("div", "progress"));
   } else if (round) {
-    info.append(
-      el("p", "muted small num", TEXTOS.rondaMomento(hms(round.segundosReales ?? round.segundos))),
-    );
-    if (round.revelada) {
+    const head = el("div", "round-head");
+    head.append(el("p", "round-value", TEXTOS.vale(round.valor)));
+    if (round.categoria) head.append(el("p", "tag", round.categoria.nombre));
+    info.append(head);
+    if (revealed) {
       info.append(
         el("p", "round-title", round.titulo),
         el("p", "muted num", round.anio ? String(round.anio) : ""),
@@ -342,15 +350,62 @@ function renderRound() {
     } else {
       info.append(el("p", "round-title", TEXTOS.rondaOculta));
     }
+    const moment = hms(round.segundosReales ?? round.segundos);
+    info.append(
+      el("p", "muted small num", TEXTOS.rondaFotogramas(round.fotogramas, round.fotogramasMax, moment)),
+    );
+    if (round.pistas && round.pistas.length) {
+      const list = el("dl", "hints");
+      for (const h of round.pistas) {
+        const long = h.tipo === "frase";
+        list.append(el("dt", long ? "quote" : "", h.etiqueta), el("dd", long ? "quote" : "", h.texto));
+      }
+      info.append(list);
+    }
   }
-  const revealed = Boolean(round && round.revelada);
-  for (const id of ["btn-revelar", "btn-pausar", "btn-reanudar", "btn-nueva"]) {
-    $(id).disabled = loading || !round;
+  const playing = Boolean(round) && !loading && !revealed;
+  const left = round ? round.pistasTotal - round.pistas.length : 0;
+  $("btn-pista").disabled = !playing || left <= 0;
+  $("btn-pista").textContent =
+    round && left > 0
+      ? TEXTOS.darPista(round.pistas.length + 1, round.pistasTotal, round.valor > 1)
+      : TEXTOS.sinPistas;
+  const frames = round ? round.fotogramas : 1;
+  const maxFrames = round ? round.fotogramasMax : 3;
+  $("btn-fotograma").textContent = TEXTOS.otroFotograma(frames, maxFrames);
+  $("btn-fotograma").disabled = !playing || frames >= maxFrames;
+  $("btn-clip").disabled = !playing || Boolean(round && round.clipUsado);
+  for (const id of ["btn-saltar", "btn-pausar", "btn-reanudar", "btn-revelar"]) {
+    $(id).disabled = !playing;
   }
-  $("btn-revelar").disabled = loading || !round || revealed;
+  $("btn-nueva").disabled = loading || !round;
+  document.querySelector(".round-actions").classList.toggle("hidden", revealed);
+  renderAward();
 }
 
 $("btn-elegir").addEventListener("click", () => show("buscar"));
+$("btn-pista").addEventListener("click", (e) =>
+  run(e.currentTarget, "error-ronda", () => state.api.hint()),
+);
+$("btn-fotograma").addEventListener("click", (e) =>
+  run(e.currentTarget, "error-ronda", () => state.api.frame(), TEXTOS.mostrando),
+);
+$("btn-clip").addEventListener("click", (e) =>
+  run(e.currentTarget, "error-ronda", () => state.api.clip()),
+);
+$("btn-saltar").addEventListener("click", (e) =>
+  run(e.currentTarget, "error-ronda", () => state.api.skip(), TEXTOS.mostrando),
+);
+$("btn-dar").addEventListener("click", (e) =>
+  run(e.currentTarget, "error-ronda", async () => {
+    await state.api.award([...state.picked]);
+    state.picked.clear();
+  }),
+);
+$("btn-ajustar").addEventListener("click", () => {
+  state.adjust = !state.adjust;
+  renderScore();
+});
 $("btn-revelar").addEventListener("click", (e) =>
   run(e.currentTarget, "error-ronda", () => state.api.reveal()),
 );
@@ -387,7 +442,78 @@ function renderScore() {
     row.append(name, minus, points, plus);
     list.appendChild(row);
   }
+  list.classList.toggle("adjust", state.adjust);
+  $("btn-ajustar").textContent = state.adjust ? TEXTOS.terminarCorregir : TEXTOS.corregir;
+  $("btn-ajustar").classList.toggle("hidden", state.players.length === 0);
   $("marcador-vacio").classList.toggle("hidden", state.players.length > 0);
+}
+
+// --- Categorías --------------------------------------------------------------------
+
+async function loadGenres() {
+  state.genres = [];
+  try {
+    state.genres = (await state.api.genres()).categorias || [];
+  } catch {
+    state.genres = null; // se reintenta en la siguiente búsqueda
+  }
+  renderGenres();
+}
+
+function renderGenres() {
+  const box = $("categorias");
+  box.replaceChildren();
+  const options = [{ id: null, nombre: TEXTOS.todasCategorias }, ...(state.genres || [])];
+  for (const g of options) {
+    const chip = el("button", "chip", g.nombre);
+    chip.type = "button";
+    const on = (state.category?.id ?? null) === g.id;
+    chip.classList.toggle("on", on);
+    chip.setAttribute("aria-pressed", String(on));
+    chip.addEventListener("click", () => {
+      state.category = g.id ? { id: g.id, nombre: g.nombre } : null;
+      renderGenres();
+      runSearch(true);
+    });
+    box.appendChild(chip);
+  }
+  $("categoria-nota").textContent = state.category
+    ? TEXTOS.categoriaElegida(state.category.nombre)
+    : TEXTOS.categoriaLibre;
+}
+
+// --- Acertantes --------------------------------------------------------------------
+
+function renderAward() {
+  const round = state.status && state.status.rondaActual;
+  const show = Boolean(round && round.revelada);
+  $("acierto").classList.toggle("hidden", !show);
+  if (!show) {
+    state.picked.clear();
+    return;
+  }
+  $("acierto-titulo").textContent = TEXTOS.quienAcerto(round.valor);
+  const list = $("acierto-jugadores");
+  list.replaceChildren();
+  const done = new Set(round.acertantes || []);
+  for (const p of state.players) {
+    const given = done.has(p.id);
+    const on = given || state.picked.has(p.id);
+    const chip = el("button", "chip", given ? `${p.nombre} ✓` : p.nombre);
+    chip.type = "button";
+    chip.classList.toggle("on", on);
+    chip.setAttribute("aria-pressed", String(on));
+    chip.disabled = given;
+    chip.addEventListener("click", () => {
+      if (state.picked.has(p.id)) state.picked.delete(p.id);
+      else state.picked.add(p.id);
+      renderAward();
+    });
+    list.appendChild(chip);
+  }
+  $("acierto-vacio").classList.toggle("hidden", state.players.length > 0);
+  $("btn-dar").classList.toggle("hidden", state.players.length === 0);
+  $("btn-dar").disabled = state.picked.size === 0;
 }
 
 // --- Jugadores ---------------------------------------------------------------------

@@ -121,3 +121,41 @@ En los registros de la consola el token se sustituye por `****` (el WebSocket lo
 - `POST /panel/api/importar`: lanza `run_import` en un hilo; el progreso se lee en el estado.
 - `GET /panel/api/revisar?confianza=baja|sin_match&pagina=N`; `POST /panel/api/peliculas/{id}/tmdb {tmdb}` corrige a mano (confianza alta, `manual=1`); `POST /panel/api/peliculas {netflix, tmdb}` da de alta por enlaces.
 - `POST /panel/api/netflix-login` saca Edge de la pantalla completa y abre el inicio de sesión; `POST /panel/api/espera` vuelve a la pantalla de espera.
+
+## Pistas, puntos y fotogramas
+
+### Datos (`arrancar.bat pistas`)
+
+Solo para el catálogo de juego (`netflix_es = 1` con ID de TMDB), en la tabla `clues`:
+
+| Campo | Fuente |
+|---|---|
+| `genres` (JSON `[{id, name}]`) | TMDB `/movie/{id}?language=es-ES` |
+| `actor`, `character` | Primer actor del reparto (`credits.cast`, `order` menor) |
+| `quote`, `quote_source`, `quote_lang` | Wikiquote (`es` y si no `en`), enlazada desde Wikidata por el ID de TMDB (P4947); si no hay, extracto de la primera crítica de TMDB (`critica`) o el eslogan (`eslogan`) |
+
+IMDb no tiene API de críticas y prohíbe extraerlas de su web, por eso la crítica sale de TMDB. Cualquier aparición del título se tapa con «…» (título completo en cualquier caja; palabras sueltas solo con mayúscula inicial). Si el personaje es el título, la pista dice «Su nombre está en el título».
+
+### Reglas (`game/hints.py`)
+
+- Sin categoría: 5 puntos y pistas género → año y nota IMDb → actor → personaje → frase.
+- Con categoría (`categoria` en `/play`): el género se sabe gratis, 3 puntos y pistas año y nota → protagonista y personaje → frase.
+- Cada pista resta 1 punto, mínimo 1. Las pistas sin datos se omiten.
+- Gratis: hasta 3 fotogramas (`/frame`, al azar entre el 5 % y el 90 % de la duración y a más de un 10 % de los ya vistos) y un clip de 5 s (`/clip`).
+- `/skip` tapa la tele al instante («Saltando escena…»), corta el clip y cambia a otro momento sin gastar fotograma.
+- Tras `/reveal`, `/award` da el valor de la ronda a cada acertante una sola vez.
+
+### API
+
+| Ruta | Qué hace |
+|---|---|
+| `GET /genres` | Categorías con su número de películas |
+| `GET /search?categoria=` · `GET /random?categoria=` | Filtran por género |
+| `POST /play` `{netflixId, seconds, categoria?}` | Empieza la ronda (422 `categoria_no_coincide`) |
+| `POST /hint` | Siguiente pista (409 `sin_pistas`, `ronda_cerrada`) |
+| `POST /frame` | Otro fotograma (409 `sin_fotogramas`) |
+| `POST /clip` | Clip de 5 s (409 `clip_usado`) |
+| `POST /skip` | Saltar escena |
+| `POST /award` `{jugadores: [id]}` | Reparte los puntos (409 `sin_revelar`) |
+
+`rondaActual` en `estado` añade `valor`, `categoria`, `pistas` (`tipo`, `etiqueta`, `texto`), `pistasTotal`, `fotogramas`, `fotogramasMax`, `clipUsado` y `acertantes`. La tele pinta en la esquina inferior izquierda de Netflix (`#fg-hints`) el valor, la categoría, el fotograma y las pistas reveladas; si la película ya está abierta, los otros fotogramas se buscan sin recargar la página.

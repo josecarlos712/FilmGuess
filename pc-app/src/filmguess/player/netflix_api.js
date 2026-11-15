@@ -224,7 +224,7 @@
       for (const hint of data.hints) {
         const item = document.createElement("li");
         const label = document.createElement("span");
-        label.className = "fg-hint-label";
+        label.className = "fg-hint-label" + (hint.long ? " fg-long-label" : "");
         label.textContent = hint.label;
         const body = document.createElement("span");
         body.className = "fg-hint-text" + (hint.long ? " fg-long" : "");

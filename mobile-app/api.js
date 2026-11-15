@@ -79,13 +79,21 @@ export function createApi(token) {
 
   return {
     status: () => request("GET", "/status"),
-    search: (q, page, all) =>
-      request(
-        "GET",
-        `/search?${new URLSearchParams({ q, page: String(page), todas: String(all) })}`,
-      ),
-    random: () => request("GET", "/random"),
-    play: (netflixId, seconds) => request("POST", "/play", { netflixId, seconds }),
+    search: (q, page, all, categoria) => {
+      const params = new URLSearchParams({ q, page: String(page), todas: String(all) });
+      if (categoria) params.set("categoria", String(categoria));
+      return request("GET", `/search?${params}`);
+    },
+    random: (categoria) =>
+      request("GET", categoria ? `/random?categoria=${categoria}` : "/random"),
+    genres: () => request("GET", "/genres"),
+    hint: () => request("POST", "/hint"),
+    frame: () => request("POST", "/frame"),
+    skip: () => request("POST", "/skip"),
+    clip: () => request("POST", "/clip"),
+    award: (jugadores) => request("POST", "/award", { jugadores }),
+    play: (netflixId, seconds, categoria) =>
+      request("POST", "/play", { netflixId, seconds, categoria: categoria || null }),
     pause: () => request("POST", "/pause"),
     resume: () => request("POST", "/resume"),
     reveal: () => request("POST", "/reveal"),

@@ -545,3 +545,129 @@ input:focus-visible {
     grid-column: 1 / -1;
   }
 }
+
+/* --- Categorías, pistas y acertantes ---------------------------------------------- */
+
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  scrollbar-width: none;
+}
+.chips::-webkit-scrollbar {
+  display: none;
+}
+.chips.wrap {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+.chip {
+  flex: none;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--p-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--p-ink);
+  font: 500 15px var(--font-text);
+  cursor: pointer;
+}
+.chip.on {
+  border-color: var(--p-accent);
+  background: var(--p-accent);
+  color: var(--p-bg);
+}
+.chip:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+.chip:focus-visible,
+.link-btn:focus-visible {
+  outline: 3px solid var(--p-accent);
+  outline-offset: 2px;
+}
+
+.round-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+}
+.round-value {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--p-accent);
+}
+.tag {
+  padding: 2px 10px;
+  border: 1px solid var(--p-line);
+  border-radius: 999px;
+  font-size: 14px;
+  color: var(--p-muted);
+}
+.hints {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 12px;
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--p-line);
+}
+.hints dt {
+  font-size: 14px;
+  color: var(--p-muted);
+}
+.hints dd {
+  margin: 0;
+}
+.hints dt.quote {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+.hints dd.quote {
+  grid-column: 1 / -1;
+  font-style: italic;
+}
+
+.round-actions {
+  display: grid;
+  gap: 10px;
+}
+.pair-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.pair-btns .btn {
+  min-width: 0;
+}
+.btn.skip {
+  border: 1px solid var(--p-danger);
+  background: transparent;
+  color: var(--p-danger);
+}
+
+.award {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+.award-title {
+  font-weight: 500;
+}
+
+.score:not(.adjust) .round-btn {
+  display: none;
+}
+.link-btn {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--p-accent);
+  font: 15px var(--font-text);
+  text-decoration: underline;
+  cursor: pointer;
+}

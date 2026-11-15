@@ -53,6 +53,11 @@
           <span class="field-label" data-text="buscarCampo"></span>
           <input id="q" type="search" enterkeyhint="search" autocomplete="off" />
         </label>
+        <div class="field">
+          <span class="field-label" data-text="categoria"></span>
+          <div id="categorias" class="chips" role="group"></div>
+          <p id="categoria-nota" class="muted small" data-text="categoriaLibre"></p>
+        </div>
         <div class="row-between">
           <label class="switch">
             <input id="todas" type="checkbox" />
@@ -87,18 +92,33 @@
         </div>
         <div id="ronda-activa" class="stack hidden">
           <div id="ronda-info" class="round-info card"></div>
-          <div class="controls">
-            <button id="btn-revelar" type="button" class="btn big" data-text="revelar"></button>
-            <button id="btn-pausar" type="button" class="btn secondary" data-text="pausar"></button>
-            <button id="btn-reanudar" type="button" class="btn secondary" data-text="reanudar"></button>
-            <button id="btn-nueva" type="button" class="btn secondary" data-text="nuevaRonda"></button>
+          <div class="round-actions">
+            <button id="btn-pista" type="button" class="btn big wide"></button>
+            <div class="pair-btns">
+              <button id="btn-fotograma" type="button" class="btn secondary"></button>
+              <button id="btn-clip" type="button" class="btn secondary" data-text="clip"></button>
+            </div>
+            <button id="btn-saltar" type="button" class="btn skip wide" data-text="saltar"></button>
+            <div class="pair-btns">
+              <button id="btn-pausar" type="button" class="btn secondary" data-text="pausar"></button>
+              <button id="btn-reanudar" type="button" class="btn secondary" data-text="reanudar"></button>
+            </div>
+            <button id="btn-revelar" type="button" class="btn secondary wide" data-text="revelar"></button>
           </div>
+          <div id="acierto" class="award card hidden">
+            <p id="acierto-titulo" class="award-title"></p>
+            <div id="acierto-jugadores" class="chips wrap" role="group"></div>
+            <p id="acierto-vacio" class="muted small hidden" data-text="sinJugadores"></p>
+            <button id="btn-dar" type="button" class="btn wide" data-text="darPuntos"></button>
+          </div>
+          <button id="btn-nueva" type="button" class="btn secondary wide" data-text="nuevaRonda"></button>
         </div>
         <p id="error-ronda" class="error hidden" role="alert"></p>
 
         <h2 class="section-title" data-text="marcadorTitulo"></h2>
         <ol id="marcador" class="score"></ol>
         <p id="marcador-vacio" class="muted hidden" data-text="sinJugadores"></p>
+        <button id="btn-ajustar" type="button" class="link-btn" data-text="corregir"></button>
       </section>
 
       <!-- 5. Jugadores -->

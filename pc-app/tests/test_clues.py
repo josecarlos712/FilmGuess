@@ -204,3 +204,11 @@ def test_momento_al_azar_lejos_de_los_vistos_y_de_los_creditos() -> None:
         moment = random_moment(6000, [3000], rng)
         assert 300 <= moment <= 5400
         assert abs(moment - 3000) >= 600
+
+
+def test_extract_quote_quita_quien_habla() -> None:
+    wikitext = "== Dialogue ==\n* Colonel Bagley: What is it about your own people that you hate?\n"
+
+    quote = extract_quote(wikitext, title_words(["El último samurái"]))
+
+    assert quote == "What is it about your own people that you hate?"
