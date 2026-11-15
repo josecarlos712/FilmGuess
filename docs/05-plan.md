@@ -25,7 +25,7 @@ Cada fase termina con sus tests en verde (`pytest`), `ruff check .`, `ruff forma
 | **F4 · Tele** | `/tv`: espera, cargando, capa de revelar y marcador | Revisión visual a 1080p y 720p |
 | **F5 · Móvil** | Conexión, buscador, rueda hh:mm:ss, ronda, jugadores | Revisión a 390 y 320 px en el navegador integrado y `gate.mjs` |
 | **F6 · Panel** | Estado, QR, importación, corrección de emparejamientos, alta por enlace | Revisión a 1440 px |
-| **F7 · Entrega** | README de instalación paso a paso (incluidos el primer inicio de sesión, la clave de TMDB y el aviso de pantalla negra), prueba de aceptación completa | Criterios de aceptación ↓ |
+| **F7 · Entrega** | README de instalación paso a paso (incluidos el primer inicio de sesión, la clave de TMDB y el aviso de pantalla negra), prueba de aceptación completa | Criterios de aceptación ↓ (resultado en [06-aceptacion.md](06-aceptacion.md)) |
 
 ## Pruebas
 
