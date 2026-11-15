@@ -1,4 +1,4 @@
-"""Importación del catálogo: CSV → SQLite → enriquecimiento con TMDB."""
+"""Importación del catálogo: CSV y Wikidata → SQLite → enriquecimiento con TMDB."""
 
 from __future__ import annotations
 
@@ -9,9 +9,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from filmguess.catalog.csv_source import read_movies_csv
-from filmguess.catalog.db import CatalogDB
-from filmguess.catalog.matching import choose_match
-from filmguess.catalog.tmdb import TmdbAuthError, TmdbClient, TmdbError
+from filmguess.catalog.db import CatalogDB, PendingMovie
+from filmguess.catalog.matching import build_match, choose_match
+from filmguess.catalog.tmdb import TmdbAuthError, TmdbClient, TmdbError, TmdbNotFoundError
+from filmguess.catalog.wikidata import read_wikidata_csv
 
 log = logging.getLogger(__name__)
 
@@ -56,14 +57,35 @@ def ingest_csv(db: CatalogDB, csv_path: Path) -> int:
     return added
 
 
-async def enrich_one(db: CatalogDB, client: TmdbClient, netflix_id: int, csv_title: str) -> bool:
+def ingest_wikidata(db: CatalogDB, path: Path) -> tuple[int, int]:
+    """Enlaza el catálogo con los IDs de TMDB de Wikidata y añade los títulos que falten.
+
+    Args:
+        db: Catálogo.
+        path: CSV descargado con :func:`~filmguess.catalog.wikidata.download_wikidata`.
+
+    Returns:
+        ``(nuevas, reabiertas)``: películas añadidas y emparejamientos que se rehacen.
+
+    Raises:
+        WikidataError: Si el fichero no se puede leer.
+    """
+    movies = read_wikidata_csv(path)
+    added, reopened = db.add_wikidata_movies(movies)
+    log.info("Wikidata: %d títulos, %d nuevos, %d reabiertos", len(movies), added, reopened)
+    return added, reopened
+
+
+async def enrich_one(db: CatalogDB, client: TmdbClient, movie: PendingMovie) -> bool:
     """Empareja una película con TMDB y guarda el resultado.
+
+    Si Wikidata da su ID de TMDB se pide la ficha directamente (confianza alta); si TMDB
+    no tiene ese ID, se busca por el título del CSV, cuando lo hay.
 
     Args:
         db: Catálogo.
         client: Cliente de TMDB.
-        netflix_id: ID de Netflix.
-        csv_title: Título del CSV.
+        movie: Película pendiente.
 
     Returns:
         ``True`` si se encontró candidato; ``False`` si se marcó sin coincidencia.
@@ -71,6 +93,18 @@ async def enrich_one(db: CatalogDB, client: TmdbClient, netflix_id: int, csv_tit
     Raises:
         TmdbError: Si TMDB falla; la película queda pendiente para otro intento.
     """
+    netflix_id, csv_title, wd_tmdb_id = movie
+    if wd_tmdb_id is not None:
+        try:
+            details = await client.movie_details(wd_tmdb_id)
+        except TmdbNotFoundError:
+            log.info("TMDB no tiene el ID %d de Wikidata (Netflix %d)", wd_tmdb_id, netflix_id)
+        else:
+            db.save_match(netflix_id, build_match(details, "alta", client.region))
+            return True
+    if not csv_title.strip():
+        db.mark_no_match(netflix_id)
+        return False
     candidates = await client.search_movies(csv_title)
     match = await choose_match(csv_title, candidates, client.movie_details, client.region)
     if match is None:
@@ -110,7 +144,7 @@ async def enrich_pending(
     """
     pending = db.pending(limit)
     progress = ImportProgress(total=len(pending))
-    queue: asyncio.Queue[tuple[int, str]] = asyncio.Queue()
+    queue: asyncio.Queue[PendingMovie] = asyncio.Queue()
     for item in pending:
         queue.put_nowait(item)
     consecutive_errors = 0
@@ -120,11 +154,11 @@ async def enrich_pending(
         nonlocal consecutive_errors
         while not fatal:
             try:
-                netflix_id, title = queue.get_nowait()
+                movie = queue.get_nowait()
             except asyncio.QueueEmpty:
                 return
             try:
-                if await enrich_one(db, client, netflix_id, title):
+                if await enrich_one(db, client, movie):
                     progress.matched += 1
                 else:
                     progress.no_match += 1
@@ -133,7 +167,7 @@ async def enrich_pending(
                 progress.errors += 1
                 progress.last_error = str(exc)
                 consecutive_errors += 1
-                log.warning("TMDB falló con «%s» (%d): %s", title, netflix_id, exc)
+                log.warning("TMDB falló con «%s» (%d): %s", movie.csv_title, movie.netflix_id, exc)
                 if isinstance(exc, TmdbAuthError) or consecutive_errors >= max_consecutive_errors:
                     fatal.append(exc)
             progress.done += 1

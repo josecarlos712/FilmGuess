@@ -9,12 +9,14 @@ from pathlib import Path
 
 from filmguess.catalog.db import CatalogDB
 from filmguess.catalog.imdb import apply_ratings, download_ratings
-from filmguess.catalog.importer import ImportProgress, enrich_pending, ingest_csv
+from filmguess.catalog.importer import ImportProgress, enrich_pending, ingest_csv, ingest_wikidata
 from filmguess.catalog.tmdb import TmdbClient
+from filmguess.catalog.wikidata import download_wikidata
 from filmguess.config import AppConfig
 
 DB_FILENAME = "catalogo.sqlite"
 IMDB_FILENAME = "title.ratings.tsv.gz"
+WIKIDATA_FILENAME = "wikidata_netflix.csv"
 
 
 def db_path(config: AppConfig) -> Path:
@@ -41,11 +43,25 @@ def imdb_path(config: AppConfig) -> Path:
     return config.resolve(config.catalog.data_dir) / IMDB_FILENAME
 
 
+def wikidata_path(config: AppConfig) -> Path:
+    """Ruta local del CSV de IDs de Netflix descargado de Wikidata.
+
+    Args:
+        config: Configuración de la app.
+
+    Returns:
+        Ruta absoluta.
+    """
+    return config.resolve(config.catalog.data_dir) / WIKIDATA_FILENAME
+
+
 @dataclass(slots=True)
 class ImportOptions:
     """Qué pasos ejecutar en una importación."""
 
     csv: bool = True
+    wikidata: bool = True
+    download_wikidata: bool = False
     tmdb: bool = True
     imdb: bool = True
     download_imdb: bool = False
@@ -57,6 +73,9 @@ class ImportSummary:
     """Resultado de la importación."""
 
     csv_added: int = 0
+    wikidata_added: int | None = None
+    wikidata_reopened: int = 0
+    wikidata_missing: bool = False
     tmdb: ImportProgress | None = None
     imdb_updated: int | None = None
     imdb_missing: bool = False
@@ -79,6 +98,7 @@ def run_import(
 
     Raises:
         CsvSourceError: Si el CSV no se puede leer.
+        WikidataError: Si la descarga o lectura de Wikidata falla.
         TmdbError: Si TMDB rechaza la clave o falla de forma continuada.
         ImdbError: Si la descarga o lectura de IMDb falla.
     """
@@ -87,6 +107,14 @@ def run_import(
     try:
         if options.csv:
             summary.csv_added = ingest_csv(db, config.resolve(config.catalog.csv_file))
+        if options.wikidata:
+            wd_file = wikidata_path(config)
+            if options.download_wikidata:
+                download_wikidata(wd_file)
+            if wd_file.exists():
+                summary.wikidata_added, summary.wikidata_reopened = ingest_wikidata(db, wd_file)
+            else:
+                summary.wikidata_missing = True
         if options.tmdb:
             summary.tmdb = asyncio.run(_enrich(db, config, options.limit, on_progress))
         if options.imdb:

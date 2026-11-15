@@ -11,6 +11,7 @@ from filmguess.catalog.imdb import ImdbError
 from filmguess.catalog.importer import ImportProgress
 from filmguess.catalog.service import ImportOptions, run_import
 from filmguess.catalog.tmdb import TmdbError
+from filmguess.catalog.wikidata import WikidataError
 from filmguess.config import DEFAULT_CONFIG_PATH, AppConfig, ConfigError, load_config
 
 
@@ -34,6 +35,14 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("servir", help="arranca el servidor y el navegador (por defecto)")
     imp = sub.add_parser("importar", help="importa o actualiza el catálogo desde el CSV y TMDB")
     imp.add_argument("--limite", type=int, default=None, help="máximo de películas a enriquecer")
+    imp.add_argument(
+        "--sin-wikidata", action="store_true", help="no usa los IDs de Netflix de Wikidata"
+    )
+    imp.add_argument(
+        "--descargar-wikidata",
+        action="store_true",
+        help="descarga antes de Wikidata los IDs de Netflix con su ID de TMDB (unos 2 MB)",
+    )
     imp.add_argument("--sin-tmdb", action="store_true", help="solo carga el CSV, sin TMDB")
     imp.add_argument("--sin-imdb", action="store_true", help="no aplica valoraciones de IMDb")
     imp.add_argument(
@@ -78,6 +87,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 def _cmd_import(config: AppConfig, args: argparse.Namespace) -> int:
     options = ImportOptions(
+        wikidata=not args.sin_wikidata,
+        download_wikidata=args.descargar_wikidata,
         tmdb=not args.sin_tmdb,
         imdb=not args.sin_imdb,
         download_imdb=args.descargar_imdb,
@@ -94,11 +105,18 @@ def _cmd_import(config: AppConfig, args: argparse.Namespace) -> int:
 
     try:
         summary = run_import(config, options, progress)
-    except (CsvSourceError, TmdbError, ImdbError) as exc:
+    except (CsvSourceError, WikidataError, TmdbError, ImdbError) as exc:
         print(f"Error en la importación: {exc}")
         return 1
 
     print(f"CSV: {summary.csv_added} películas nuevas.")
+    if summary.wikidata_added is not None:
+        print(
+            f"Wikidata: {summary.wikidata_added} películas nuevas, "
+            f"{summary.wikidata_reopened} emparejamientos a corregir."
+        )
+    elif summary.wikidata_missing:
+        print("Wikidata: no hay fichero de IDs; usa --descargar-wikidata para obtenerlo.")
     if summary.tmdb is not None:
         t = summary.tmdb
         print(f"TMDB: {t.matched} emparejadas, {t.no_match} sin coincidencia, {t.errors} errores.")

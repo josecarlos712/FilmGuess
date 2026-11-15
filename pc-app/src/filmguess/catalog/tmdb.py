@@ -23,6 +23,10 @@ class TmdbAuthError(TmdbError):
     """TMDB rechaza la clave: no tiene sentido seguir intentándolo."""
 
 
+class TmdbNotFoundError(TmdbError):
+    """TMDB no tiene el recurso pedido (404)."""
+
+
 @dataclass(frozen=True, slots=True)
 class TmdbCandidate:
     """Un resultado de ``/search/movie``."""
@@ -193,6 +197,7 @@ class TmdbClient:
             JSON de ``/movie/{id}`` con ``external_ids`` y ``watch/providers``.
 
         Raises:
+            TmdbNotFoundError: Si TMDB no tiene esa película.
             TmdbError: Si la petición falla.
         """
         return await self._get(
@@ -216,7 +221,7 @@ class TmdbClient:
             if response.status_code == 401:
                 raise TmdbAuthError("TMDB rechaza la clave (401). Revisa [tmdb] api_key.")
             if response.status_code == 404:
-                raise TmdbError(f"TMDB no encuentra {path} (404).")
+                raise TmdbNotFoundError(f"TMDB no encuentra {path} (404).")
             if response.status_code == 429 or response.status_code >= 500:
                 last_error = f"HTTP {response.status_code}"
                 retry_after = response.headers.get("Retry-After", "")

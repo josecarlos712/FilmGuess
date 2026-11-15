@@ -59,7 +59,7 @@ async def test_enrich_pending_guarda_y_deja_pendientes_los_fallos(db: CatalogDB)
     assert sorted(seen) == [1, 2, 3]
     assert db.get(1) is not None and db.get(1).match_conf == "alta"  # type: ignore[union-attr]
     assert db.get(2) is not None and db.get(2).match_conf == "sin_match"  # type: ignore[union-attr]
-    assert db.pending() == [(3, "Falla")]  # se reintentará en la próxima ejecución
+    assert db.pending() == [(3, "Falla", None)]  # se reintentará en la próxima ejecución
 
 
 async def test_enrich_pending_respeta_limite(db: CatalogDB) -> None:

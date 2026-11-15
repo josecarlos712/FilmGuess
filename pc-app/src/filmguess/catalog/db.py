@@ -7,10 +7,11 @@ from collections.abc import Iterable, Sequence
 from dataclasses import fields
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, NamedTuple, cast
 
 from filmguess.catalog.csv_source import CsvMovie
 from filmguess.catalog.models import Confidence, Movie, TmdbMatch
+from filmguess.catalog.wikidata import WikidataMovie
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS movies (
@@ -31,7 +32,8 @@ CREATE TABLE IF NOT EXISTS movies (
     netflix_es      INTEGER,
     match_conf      TEXT,
     manual          INTEGER NOT NULL DEFAULT 0,
-    updated_at      TEXT
+    updated_at      TEXT,
+    wd_tmdb_id      INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_movies_imdb ON movies(imdb_id);
 CREATE INDEX IF NOT EXISTS idx_movies_pending ON movies(match_conf);
@@ -64,6 +66,16 @@ CREATE TABLE IF NOT EXISTS random_history (
 );
 """
 
+
+class PendingMovie(NamedTuple):
+    """Película pendiente de enriquecer con TMDB."""
+
+    netflix_id: int
+    csv_title: str
+    wd_tmdb_id: int | None = None
+    """ID de TMDB según Wikidata; si existe se usa en lugar de buscar por título."""
+
+
 _MOVIE_COLUMNS = tuple(f.name for f in fields(Movie))
 _SELECT_MOVIE = "SELECT " + ", ".join(f"m.{c}" for c in _MOVIE_COLUMNS) + " FROM movies m"
 
@@ -87,10 +99,17 @@ class CatalogDB:
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.executescript(SCHEMA)
+        self._migrate()
 
     def close(self) -> None:
         """Cierra la conexión."""
         self._conn.close()
+
+    def _migrate(self) -> None:
+        columns = {str(r[1]) for r in self._conn.execute("PRAGMA table_info(movies)")}
+        if "wd_tmdb_id" not in columns:
+            with self._conn:
+                self._conn.execute("ALTER TABLE movies ADD COLUMN wd_tmdb_id INTEGER")
 
     # --- Alta desde el CSV -------------------------------------------------
 
@@ -111,24 +130,69 @@ class CatalogDB:
             )
         return self.count() - before
 
+    def add_wikidata_movies(self, movies: Iterable[WikidataMovie]) -> tuple[int, int]:
+        """Enlaza las películas con el ID de TMDB que da Wikidata y añade las que falten.
+
+        Solo se usan los títulos con ID de TMDB. Si una película ya emparejada (no a mano)
+        apunta a otro ID de TMDB, vuelve a quedar pendiente para corregirla por ID.
+        Un ID que no cambia no se vuelve a procesar.
+
+        Args:
+            movies: Títulos leídos de Wikidata.
+
+        Returns:
+            ``(nuevas, reabiertas)``: películas añadidas y emparejamientos que se rehacen.
+        """
+        wanted = {m.netflix_id: m.tmdb_id for m in movies if m.tmdb_id is not None}
+        current = {
+            int(r[0]): r[1] for r in self._conn.execute("SELECT netflix_id, wd_tmdb_id FROM movies")
+        }
+        new = [(nid, tid) for nid, tid in wanted.items() if nid not in current]
+        changed = [
+            (tid, nid) for nid, tid in wanted.items() if nid in current and current[nid] != tid
+        ]
+        reopened = 0
+        with self._conn:
+            self._conn.executemany(
+                "INSERT INTO movies(netflix_id, csv_title, wd_tmdb_id) VALUES (?, '', ?)", new
+            )
+            self._conn.executemany("UPDATE movies SET wd_tmdb_id=? WHERE netflix_id=?", changed)
+            for _, nid in changed:
+                cur = self._conn.execute(
+                    "UPDATE movies SET match_conf=NULL WHERE netflix_id=? AND manual=0 "
+                    "AND match_conf IS NOT NULL AND (tmdb_id IS NULL OR tmdb_id != wd_tmdb_id)",
+                    (nid,),
+                )
+                reopened += cur.rowcount
+        return len(new), reopened
+
     # --- Enriquecimiento -----------------------------------------------------
 
-    def pending(self, limit: int | None = None) -> list[tuple[int, str]]:
+    def pending(self, limit: int | None = None) -> list[PendingMovie]:
         """Películas que aún no se han emparejado con TMDB.
+
+        Primero las que tienen ID de TMDB por Wikidata (no gastan búsquedas) y, dentro de
+        cada grupo, por ID de Netflix.
 
         Args:
             limit: Máximo de filas; ``None`` para todas.
 
         Returns:
-            Pares ``(netflix_id, csv_title)`` en orden de ID.
+            Las películas pendientes.
         """
-        sql = "SELECT netflix_id, csv_title FROM movies WHERE match_conf IS NULL AND manual = 0"
-        sql += " ORDER BY netflix_id"
+        sql = (
+            "SELECT netflix_id, csv_title, wd_tmdb_id FROM movies "
+            "WHERE match_conf IS NULL AND manual = 0 "
+            "ORDER BY wd_tmdb_id IS NULL, netflix_id"
+        )
         params: tuple[int, ...] = ()
         if limit is not None:
             sql += " LIMIT ?"
             params = (limit,)
-        return [(int(r[0]), str(r[1])) for r in self._conn.execute(sql, params)]
+        return [
+            PendingMovie(int(r[0]), str(r[1]), None if r[2] is None else int(r[2]))
+            for r in self._conn.execute(sql, params)
+        ]
 
     def save_match(self, netflix_id: int, match: TmdbMatch, *, manual: bool = False) -> None:
         """Guarda el emparejamiento con TMDB.

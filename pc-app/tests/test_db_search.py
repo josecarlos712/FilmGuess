@@ -34,7 +34,7 @@ def test_add_csv_ignora_existentes(db: CatalogDB) -> None:
     assert db.add_csv_movies([CsvMovie(2, "B"), CsvMovie(3, "C")]) == 1
     assert db.count() == 3
     assert [p[0] for p in db.pending()] == [1, 2, 3]
-    assert db.pending(limit=1) == [(1, "A")]
+    assert db.pending(limit=1) == [(1, "A", None)]
 
 
 @pytest.mark.parametrize("q", ["origen", "Orígen", "ORIG", "incep", "inception"])
