@@ -118,3 +118,21 @@ def test_los_registros_no_muestran_el_token() -> None:
     assert record.getMessage() == '1.2.3.4 - "GET /ws?token=****&x=1"'
     config = uvicorn_log_config()
     assert all("redact_token" in h["filters"] for h in config["handlers"].values())
+
+
+def test_el_registro_crea_su_carpeta_en_una_instalacion_nueva(tmp_path: Path) -> None:
+    import logging
+
+    from filmguess.server.run import log_to_file
+
+    path = tmp_path / "data" / "filmguess.log"  # data/ aún no existe
+    log_to_file(path)
+    root = logging.getLogger()
+    handler = root.handlers[-1]
+    try:
+        logging.getLogger("prueba").warning("hola")
+        handler.flush()
+        assert "hola" in path.read_text(encoding="utf-8")
+    finally:
+        root.removeHandler(handler)
+        handler.close()

@@ -60,8 +60,10 @@ def log_to_file(path: Path) -> None:
     """Guarda también el registro en un fichero (rotado), para revisar fallos después.
 
     Args:
-        path: Ruta del fichero de registro.
+        path: Ruta del fichero de registro. Su carpeta se crea si no existe (en una
+            instalación nueva aún no hay ``data/``).
     """
+    path.parent.mkdir(parents=True, exist_ok=True)
     handler = RotatingFileHandler(path, maxBytes=LOG_MAX_BYTES, backupCount=1, encoding="utf-8")
     handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
     logging.getLogger().addHandler(handler)
