@@ -329,6 +329,46 @@
   const showScores = (data) => {
     const old = document.getElementById("fg-scores");
     if (old) old.remove();
+    const reveal = document.getElementById("fg-reveal");
+    const caption = reveal && reveal.querySelector(".fg-reveal-caption");
+    let extra = caption && caption.querySelector(".fg-reveal-extra");
+    if (caption && !extra) {
+      extra = document.createElement("div");
+      extra.className = "fg-reveal-extra";
+      caption.appendChild(extra);
+    }
+    // Todas las pistas de la ronda: las que se abrieron y las que quedaron sin abrir.
+    // Se pintan una vez; al repartir puntos solo se rehace el marcador.
+    if (extra && data.hints && data.hints.length && !extra.querySelector(".fg-all-hints")) {
+      const block = document.createElement("section");
+      block.className = "fg-all-hints";
+      const heading = document.createElement("p");
+      heading.className = "fg-scores-title";
+      heading.textContent = data.hintsTitle || "";
+      const list = document.createElement("dl");
+      data.hints.forEach((hint, i) => {
+        const label = document.createElement("dt");
+        label.style.setProperty("--i", String(i));
+        label.textContent = hint.label;
+        if (!hint.seen && data.unseenText) {
+          const tag = document.createElement("span");
+          tag.className = "fg-unseen-tag";
+          tag.textContent = data.unseenText;
+          label.appendChild(tag);
+        }
+        const text = document.createElement("dd");
+        text.style.setProperty("--i", String(i));
+        text.textContent = hint.text;
+        if (hint.long) text.classList.add("fg-long");
+        if (!hint.seen) {
+          label.classList.add("fg-unseen");
+          text.classList.add("fg-unseen");
+        }
+        list.append(label, text);
+      });
+      block.append(heading, list);
+      extra.prepend(block);
+    }
     const players = data.players || [];
     if (!players.length) return true;
     const box = document.createElement("section");
@@ -362,9 +402,7 @@
       list.appendChild(row);
     });
     box.appendChild(list);
-    const reveal = document.getElementById("fg-reveal");
-    const caption = reveal && reveal.querySelector(".fg-reveal-caption");
-    if (caption) caption.appendChild(box);
+    if (extra) extra.appendChild(box);
     else {
       box.classList.add("fg-floating");
       (document.fullscreenElement || document.body).appendChild(box);

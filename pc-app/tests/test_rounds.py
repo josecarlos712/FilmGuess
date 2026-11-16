@@ -218,16 +218,21 @@ def test_la_tele_avisa_de_aciertos_y_fallos_y_cierra_con_marcador(
     }
     assert player.scores == []  # la escena sigue: nada de marcador todavía
 
+    client.post("/hint", headers=HEADERS)
     client.post("/reveal", headers=HEADERS)
     assert [p["delta"] for p in player.scores[-1]["players"]] == [0, 0, -5]  # type: ignore[index]
+    # Al revelar se ven todas las pistas: la abierta y las que quedaron sin abrir.
+    pistas = player.scores[-1]["hints"]
+    assert isinstance(pistas, list) and len(pistas) > 1
+    assert [h["seen"] for h in pistas] == [True] + [False] * (len(pistas) - 1)
 
     client.post("/award", json={"jugadores": ids[1:]}, headers=HEADERS)
     assert player.toasts[-1]["title"] == "¡Luis y Marta aciertan!"
-    assert player.toasts[-1]["delta"] == "+5"
+    assert player.toasts[-1]["delta"] == "+4"  # la pista abierta baja la ronda a 4
     final = player.scores[-1]["players"]
     assert final == [  # ordenado por puntos, con lo ganado en la ronda
-        {"name": "Luis", "points": 5, "delta": 5},
-        {"name": "Marta", "points": 5, "delta": 5},
+        {"name": "Luis", "points": 4, "delta": 4},
+        {"name": "Marta", "points": 4, "delta": 4},
         {"name": "Ana", "points": -5, "delta": -5},
     ]
 

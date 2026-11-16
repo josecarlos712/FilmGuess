@@ -192,11 +192,44 @@ OVERLAY_CSS = """
   margin-top: calc(var(--u) * 0.2); font-size: calc(var(--u) * 1.5); color: var(--p-muted);
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
-#fg-scores {
-  margin: calc(var(--u) * 3) 0 0; padding-top: calc(var(--u) * 2);
+#fg-reveal .fg-reveal-inner:has(.fg-reveal-extra) { max-width: calc(var(--u) * 116); }
+#fg-reveal .fg-reveal-inner:has(.fg-reveal-extra) h1 { font-size: calc(var(--u) * 5.2); }
+#fg-reveal .fg-reveal-inner:has(.fg-reveal-extra) .fg-year { margin-top: calc(var(--u) * 1.4); }
+#fg-reveal .fg-reveal-extra {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--u) * 26), 1fr));
+  align-items: start; gap: calc(var(--u) * 4);
+  margin-top: calc(var(--u) * 3); padding-top: calc(var(--u) * 2);
   border-top: 1px solid rgb(255 255 255 / 0.12);
-  animation: fg-rise 700ms var(--fg-out) 800ms both;
 }
+#fg-reveal .fg-all-hints { animation: fg-rise 700ms var(--fg-out) 760ms both; }
+#fg-reveal .fg-all-hints .fg-scores-title,
+#fg-scores .fg-scores-title {
+  margin: 0 0 calc(var(--u) * 1); font-size: calc(var(--u) * 1.7); color: var(--p-muted);
+  text-transform: uppercase; letter-spacing: 0.12em;
+}
+#fg-reveal .fg-all-hints dl {
+  display: grid; grid-template-columns: auto minmax(0, 1fr);
+  column-gap: calc(var(--u) * 1.4); row-gap: calc(var(--u) * 0.7); margin: 0;
+}
+#fg-reveal .fg-all-hints dt {
+  font-size: calc(var(--u) * 1.7); line-height: 1.35; color: var(--p-muted);
+  animation: fg-in 520ms var(--fg-out) calc(900ms + var(--i, 0) * 90ms) both;
+}
+#fg-reveal .fg-all-hints dd {
+  margin: 0; font-size: calc(var(--u) * 1.9); line-height: 1.3; text-wrap: pretty;
+  animation: fg-in 520ms var(--fg-out) calc(900ms + var(--i, 0) * 90ms) both;
+}
+#fg-reveal .fg-all-hints dd.fg-long {
+  font-style: italic; font-size: calc(var(--u) * 1.7);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+}
+#fg-reveal .fg-all-hints dd.fg-unseen { color: var(--p-accent); }
+#fg-reveal .fg-unseen-tag {
+  display: block; font-size: 0.8em; color: var(--p-accent); opacity: 0.8;
+  text-transform: lowercase;
+}
+#fg-scores { animation: fg-rise 700ms var(--fg-out) 800ms both; }
+#fg-scores.fg-floating { animation: fg-rise 700ms var(--fg-out) both; }
 #fg-scores.fg-floating {
   position: fixed; right: calc(var(--u) * 2); bottom: calc(var(--u) * 2);
   z-index: 2147483646; width: calc(var(--u) * 32); margin: 0;
@@ -266,7 +299,8 @@ OVERLAY_CSS = """
   #fg-reveal .fg-word, #fg-reveal .fg-original, #fg-reveal .fg-year,
   #fg-hints, #fg-hints li > span, #fg-toasts .fg-toast, #fg-toasts .fg-toast-out,
   #fg-toasts .fg-toast-delta, #fg-scores, #fg-scores li, #fg-scores .fg-bar,
-  #fg-scores .fg-delta { animation: none; }
+  #fg-scores .fg-delta, #fg-reveal .fg-all-hints, #fg-reveal .fg-all-hints dt,
+  #fg-reveal .fg-all-hints dd { animation: none; }
   #fg-reveal .fg-poster::after { display: none; }
 }
 """

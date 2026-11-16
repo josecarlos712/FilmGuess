@@ -596,12 +596,18 @@ class GameSession:
         except PlayerError as exc:
             logging.getLogger(__name__).debug("Aviso no mostrado: %s", exc)
 
-    async def _show_scores(self, current: object) -> None:
-        """Marcador con lo ganado en la ronda, junto a la película revelada."""
+    async def _show_scores(self, current: Round) -> None:
+        """Marcador con lo ganado en la ronda y todas sus pistas, junto a la película."""
         deltas = self._deltas if self._deltas_round is current else {}
         players = sorted(self.scoreboard.players, key=lambda p: -p.points)
         data = {
             "title": "Marcador",
+            "hintsTitle": "Las pistas",
+            "unseenText": "sin abrir",
+            "hints": [
+                {"label": h.label, "text": h.text, "long": h.long, "seen": i < current.revealed}
+                for i, h in enumerate(current.hints)
+            ],
             "players": [
                 {"name": p.name, "points": p.points, "delta": deltas.get(p.id, 0)} for p in players
             ],
