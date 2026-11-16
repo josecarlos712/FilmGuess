@@ -6,7 +6,7 @@ import json
 from functools import cache
 from pathlib import Path
 
-from filmguess.webfiles import design_tokens
+from filmguess.webfiles import cover_css, design_tokens
 
 API_JS = Path(__file__).with_name("netflix_api.js")
 
@@ -48,42 +48,58 @@ FONTS_IMPORT = (
 )
 """Las mismas fuentes que la tele; ``@import`` tiene que ir al principio de la hoja."""
 
+EASINGS = (
+    "--fg-out: cubic-bezier(0.19, 1, 0.22, 1);"
+    " --fg-inout: cubic-bezier(0.645, 0.045, 0.355, 1);"
+)
+"""Curvas de las capas: ease-out expo para entrar y ease-in-out cubic para moverse."""
+
 OVERLAY_CSS = """
-#fg-cover, #fg-reveal {
-  position: fixed; inset: 0; z-index: 2147483647; margin: 0;
-  --u: min(1vw, calc(100vh / 56.25));
+#fg-reveal, #fg-hints { margin: 0; --u: min(1vw, calc(100vh / 56.25)); }
+#fg-reveal {
+  position: fixed; inset: 0; z-index: 2147483647;
   background: var(--p-bg); color: var(--p-ink);
   font-family: var(--font-text); -webkit-font-smoothing: antialiased;
 }
-#fg-cover { display: grid; place-content: center; justify-items: center; gap: calc(var(--u) * 3); }
-#fg-cover p {
-  margin: 0; font-family: var(--font-display); font-weight: var(--display-weight);
-  font-size: calc(var(--u) * 4.4); letter-spacing: var(--display-tracking);
-}
-#fg-cover .fg-bar {
-  position: relative; overflow: hidden; width: calc(var(--u) * 22); height: 3px;
-  border-radius: 3px; background: var(--p-line);
-}
-#fg-cover .fg-bar::after {
-  content: ""; position: absolute; inset: 0 auto 0 0; width: 30%; border-radius: inherit;
-  background: var(--p-accent); animation: fg-bar 2800ms var(--ease-out) infinite;
-}
-@keyframes fg-bar { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
 #fg-reveal {
   display: grid; place-items: center; padding: calc(var(--u) * 5);
-  background: rgb(17 17 17 / 0.92);
-  animation: fg-in var(--enter-ms) var(--ease-out) both;
+  background: rgb(17 17 17 / 0.92); overflow: hidden; isolation: isolate;
+  animation: fg-fade 420ms var(--fg-out) both;
+}
+#fg-reveal::before {
+  content: ""; position: absolute; left: 50%; top: 50%; z-index: -1;
+  width: calc(var(--u) * 90); aspect-ratio: 1; margin: calc(var(--u) * -45) 0 0 calc(var(--u) * -45);
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--p-accent) 38%, transparent), transparent);
+  animation: fg-burst 1400ms var(--fg-out) both;
 }
 #fg-reveal .fg-reveal-inner {
   display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center;
   gap: calc(var(--u) * 5); width: 100%; max-width: calc(var(--u) * 86);
 }
 #fg-reveal .fg-no-poster { grid-template-columns: minmax(0, 1fr); text-align: center; }
-#fg-reveal img {
-  height: calc(var(--u) * 42); max-height: 78vh; aspect-ratio: 2 / 3; object-fit: cover;
-  border-radius: var(--radius-m);
+#fg-reveal .fg-poster {
+  position: relative; overflow: hidden; border-radius: var(--radius-m);
   box-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 5) rgb(0 0 0 / .55);
+  animation: fg-poster 1100ms var(--fg-out) 80ms both;
 }
+#fg-reveal .fg-poster::after {
+  /* destello que cruza el póster una vez */
+  content: ""; position: absolute; inset: -20% auto -20% 0; width: 45%;
+  background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.28), transparent);
+  transform: translateX(-120%) skewX(-12deg);
+  animation: fg-sheen 1200ms var(--fg-inout) 700ms both;
+}
+#fg-reveal img {
+  display: block; height: calc(var(--u) * 42); max-height: 78vh; aspect-ratio: 2 / 3;
+  object-fit: cover;
+}
+#fg-reveal .fg-word {
+  display: inline-block;
+  animation: fg-rise 800ms var(--fg-out) calc(260ms + var(--i, 0) * 70ms) both;
+}
+#fg-reveal .fg-original { animation: fg-rise 800ms var(--fg-out) 520ms both; }
+#fg-reveal .fg-year { animation: fg-rise 800ms var(--fg-out) 640ms both; }
 #fg-reveal h1 {
   margin: 0; font-family: var(--font-display); font-weight: var(--display-weight);
   font-size: calc(var(--u) * 6.4); line-height: 1; letter-spacing: var(--display-tracking-xl);
@@ -124,6 +140,9 @@ OVERLAY_CSS = """
   border-top: 1px solid rgb(255 255 255 / 0.12); list-style: none;
 }
 #fg-hints li { display: contents; }
+#fg-hints li > span {
+  animation: fg-in 520ms var(--fg-out) calc(180ms + var(--i, 0) * 90ms) both;
+}
 #fg-hints .fg-hint-label {
   font-size: calc(var(--u) * 1.7); line-height: 1.35; color: var(--p-muted);
   align-self: baseline;
@@ -139,11 +158,29 @@ OVERLAY_CSS = """
 @keyframes fg-in {
   from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; }
 }
+@keyframes fg-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fg-burst {
+  from { opacity: 0; transform: scale(0.6); } 40% { opacity: 1; } to { opacity: 0.7; transform: scale(1); }
+}
+@keyframes fg-poster {
+  from { opacity: 0; transform: translateY(calc(var(--u) * 4)) rotate(-4deg) scale(0.92); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fg-sheen { to { transform: translateX(340%) skewX(-12deg); } }
+@keyframes fg-rise {
+  from { opacity: 0; transform: translateY(0.45em); } to { opacity: 1; transform: none; }
+}
 @media (prefers-reduced-motion: reduce) {
-  #fg-reveal, #fg-hints, #fg-cover .fg-bar::after { animation: none; }
+  #fg-reveal, #fg-reveal::before, #fg-reveal .fg-poster, #fg-reveal .fg-poster::after,
+  #fg-reveal .fg-word, #fg-reveal .fg-original, #fg-reveal .fg-year,
+  #fg-hints, #fg-hints li > span { animation: none; }
+  #fg-reveal .fg-poster::after { display: none; }
 }
 """
-"""Cubierta de carga y capa de «Revelar», con los tokens de ``web/system.css``."""
+"""Capa de «Revelar» y pistas, con los tokens de ``web/system.css``.
+
+La cubierta «Preparando fotograma…» está en ``web/cover.css`` (la comparte la tele).
+"""
 
 TEXTS: dict[str, str] = {"cover": "Preparando fotograma…", "skip": "Saltando escena…"}
 """Textos que pinta el script en la página de Netflix."""
@@ -155,8 +192,8 @@ def page_css() -> str:
     Returns:
         El CSS completo.
     """
-    tokens = f"#fg-cover, #fg-reveal, #fg-hints {{ {design_tokens()} }}"
-    return "\n".join([FONTS_IMPORT, HIDE_CSS, tokens, OVERLAY_CSS])
+    tokens = f".fg-cover, #fg-reveal, #fg-hints {{ {design_tokens()} {EASINGS} }}"
+    return "\n".join([FONTS_IMPORT, HIDE_CSS, tokens, cover_css(), OVERLAY_CSS])
 
 
 def merged_selectors(overrides: dict[str, str] | None = None) -> dict[str, str]:

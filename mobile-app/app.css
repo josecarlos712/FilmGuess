@@ -5,6 +5,10 @@
 :root {
   --gutter: 16px;
   --tap: 48px;
+  /* Curvas de web-animation-design: entrar = ease-out, moverse en pantalla = ease-in-out. */
+  --out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+  --out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --inout: cubic-bezier(0.645, 0.045, 0.355, 1);
 }
 
 body {
@@ -59,6 +63,7 @@ button {
 }
 
 .steps {
+  --idx: 0;
   position: sticky;
   top: calc(48px + env(safe-area-inset-top));
   z-index: 9;
@@ -71,7 +76,25 @@ button {
   border-radius: var(--radius-m);
   background: var(--p-surface);
 }
+/* Píldora que se desliza hasta el paso actual. */
+.steps::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 16px) / 3);
+  border-radius: calc(var(--radius-m) - 4px);
+  background: var(--p-surface-2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p-accent) 30%, transparent);
+  transform: translateX(calc(var(--idx) * (100% + 4px)));
+  transition: transform 280ms var(--inout);
+}
+.steps.no-step::before {
+  opacity: 0;
+}
 .step {
+  position: relative;
   min-height: 44px;
   border: 0;
   border-radius: calc(var(--radius-m) - 4px);
@@ -84,7 +107,6 @@ button {
     color 160ms var(--ease-out);
 }
 .step.on {
-  background: var(--p-surface-2);
   color: var(--p-ink);
 }
 .step:active {
@@ -106,9 +128,17 @@ main {
   padding: 20px var(--gutter) 0;
 }
 .view {
+  --dx: 0px;
   display: grid;
   gap: 16px;
-  animation: fg-enter 320ms var(--ease-out) both;
+  animation: m-view 300ms var(--out-quint) both;
+}
+/* Al avanzar entra desde la derecha; al volver, desde la izquierda. */
+main[data-dir="fwd"] .view {
+  --dx: 24px;
+}
+main[data-dir="back"] .view {
+  --dx: -24px;
 }
 .view-title {
   font-size: 30px;
@@ -681,4 +711,357 @@ input:focus-visible {
   gap: 8px;
   padding-top: 12px;
   border-top: 1px solid var(--p-line);
+}
+
+/* --- Animaciones -------------------------------------------------------------------- */
+
+/* Conexión viva: el punto verde late con un anillo. */
+.link-state {
+  position: relative;
+}
+.link-state[data-state="ok"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  border: 2px solid #7fb48a;
+  animation: m-ping 2400ms var(--out-expo) infinite;
+}
+
+/* Pulsación: todo lo que se toca responde. */
+.btn:active,
+.chip:active,
+.poster-card:active {
+  transform: scale(0.97);
+}
+.poster-card {
+  transition: transform 140ms var(--out-quint);
+}
+.chip {
+  transition:
+    transform 120ms var(--out-quint),
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
+}
+.chip.on {
+  animation: m-pop 320ms var(--out-quint);
+}
+
+/* Botón ocupado: una franja de luz lo recorre mientras espera al PC. */
+.btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.btn[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.25) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: m-sweep 1100ms linear infinite;
+}
+.btn.secondary[aria-busy="true"]::after {
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    color-mix(in srgb, var(--p-accent) 35%, transparent) 50%,
+    transparent 70%
+  );
+}
+
+/* Pósters: llegan escalonados y la foto aparece al cargar. */
+.posters > li {
+  animation: m-rise 460ms var(--out-quint) calc(min(var(--i, 0), 12) * 45ms) both;
+}
+img.poster {
+  opacity: 0;
+  transition:
+    opacity 320ms ease,
+    transform 220ms var(--ease-out);
+}
+img.poster.loaded {
+  opacity: 1;
+}
+
+/* Película elegida: el póster entra con un pequeño giro, como una carta. */
+#view-tiempo:not(.hidden) .chosen-poster {
+  animation: m-deal 600ms var(--out-expo) 80ms both;
+}
+
+/* Proyector en miniatura mientras la tele prepara el fotograma. */
+.m-projector {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+.m-reel {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--p-accent);
+  background:
+    radial-gradient(circle, var(--p-accent) 0 5px, transparent 6px),
+    conic-gradient(
+      transparent 0 30deg,
+      var(--p-surface-2) 30deg 90deg,
+      transparent 90deg 150deg,
+      var(--p-surface-2) 150deg 210deg,
+      transparent 210deg 270deg,
+      var(--p-surface-2) 270deg 330deg,
+      transparent 330deg
+    );
+  animation: m-spin 1400ms linear infinite;
+}
+.m-film {
+  position: relative;
+  height: 40px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+}
+.m-film::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(100% + 120px);
+  background:
+    repeating-linear-gradient(90deg, var(--p-muted) 0 6px, transparent 6px 15px) 0 3px / 100% 4px no-repeat,
+    repeating-linear-gradient(90deg, var(--p-muted) 0 6px, transparent 6px 15px) 0 calc(100% - 3px) / 100% 4px no-repeat,
+    repeating-linear-gradient(
+        90deg,
+        #3a3530 0 41px,
+        var(--p-surface) 41px 45px,
+        #2a2f33 45px 86px,
+        var(--p-surface) 86px 90px
+      )
+      0 10px / 100% 20px no-repeat,
+    var(--p-surface);
+  animation: m-run 1800ms linear infinite;
+}
+.m-film::after {
+  /* la ventanilla: el fotograma que sale en la tele */
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 7px;
+  width: 44px;
+  height: 26px;
+  margin-left: -22px;
+  border: 2px solid var(--p-accent);
+  border-radius: 3px;
+  animation: m-glow 1600ms var(--inout) infinite alternate;
+}
+.m-projector .round-title {
+  grid-column: 1 / -1;
+  font-size: 20px;
+}
+
+/* Tarjetas de premio y fallo: entran desde abajo; fallar las sacude. */
+.award:not(.hidden),
+.secret:not(.hidden) {
+  animation: m-rise 380ms var(--out-quint) both;
+}
+.award.shake {
+  animation: m-shake 420ms var(--inout);
+}
+
+/* Marcador: las filas se recolocan deslizándose y los puntos saltan. */
+.score-row {
+  position: relative;
+}
+.score-row.moving {
+  transition: transform 450ms var(--inout);
+}
+.score-points {
+  display: inline-block;
+}
+.score-row.bump .score-points {
+  animation: m-bump 700ms var(--out-expo);
+}
+.score-row.bump::after {
+  content: attr(data-delta);
+  position: absolute;
+  right: calc(48px + 10px + 3ch);
+  top: 50%;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--p-accent);
+  pointer-events: none;
+  animation: m-float 1100ms var(--out-expo) forwards;
+}
+.score-row.bump.down::after {
+  color: var(--p-danger);
+}
+.people > li.new {
+  animation: m-rise 360ms var(--out-quint) both;
+}
+
+/* Confeti bronce al dar puntos (lo lanza app.js con la Web Animations API). */
+.m-confetti {
+  position: fixed;
+  z-index: 50;
+  left: 0;
+  top: 0;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+@keyframes m-view {
+  from {
+    opacity: 0;
+    transform: translateX(var(--dx)) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes m-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes m-pop {
+  0% {
+    transform: scale(0.94);
+  }
+  60% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes m-deal {
+  from {
+    opacity: 0;
+    transform: translateY(12px) rotate(-8deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes m-ping {
+  from {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+@keyframes m-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes m-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes m-run {
+  to {
+    transform: translateX(-90px);
+  }
+}
+@keyframes m-glow {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes m-shake {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: translateX(-8px);
+  }
+  40% {
+    transform: translateX(7px);
+  }
+  60% {
+    transform: translateX(-5px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+@keyframes m-bump {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.5);
+    color: var(--p-accent);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes m-float {
+  from {
+    opacity: 1;
+    transform: translateY(-50%);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-160%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view,
+  .link-state[data-state="ok"]::after,
+  .chip.on,
+  .btn[aria-busy="true"]::after,
+  .posters > li,
+  #view-tiempo:not(.hidden) .chosen-poster,
+  .m-reel,
+  .m-film::before,
+  .m-film::after,
+  .award:not(.hidden),
+  .secret:not(.hidden),
+  .award.shake,
+  .score-row.bump .score-points,
+  .score-row.bump::after,
+  .people > li.new {
+    animation: none;
+  }
+  .steps::before,
+  .score-row.moving,
+  .chip,
+  .poster-card,
+  img.poster {
+    transition: none;
+  }
+  img.poster {
+    opacity: 1;
+  }
+  .m-confetti {
+    display: none;
+  }
 }

@@ -402,7 +402,7 @@ def test_movil_se_sirve_en_la_red_local(client: TestClient) -> None:
 
     page = client.get("/m/")
     assert page.status_code == 200
-    assert '<script type="module" src="app.js?v=3">' in page.text
+    assert '<script type="module" src="app.js?v=4">' in page.text
     for name in ("app.js", "api.js", "wheel.js", "textos.js", "app.css"):
         assert client.get(f"/m/{name}").status_code == 200, name
 

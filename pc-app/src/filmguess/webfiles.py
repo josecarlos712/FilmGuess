@@ -13,6 +13,7 @@ MOBILE_DIR = Path(__file__).resolve().parents[3] / "mobile-app"
 """Web del móvil (``/m/``), en la raíz del repositorio."""
 
 SYSTEM_CSS = WEB_DIR / "system.css"
+COVER_CSS = WEB_DIR / "cover.css"
 TV_PAGE = WEB_DIR / "tv" / "index.html"
 PANEL_PAGE = WEB_DIR / "panel" / "index.html"
 
@@ -41,3 +42,19 @@ def design_tokens() -> str:
     if not match:
         raise WebFilesError(f"{SYSTEM_CSS} no tiene el bloque «tokens:start … tokens:end».")
     return match.group("body").strip()
+
+
+@cache
+def cover_css() -> str:
+    """Hoja de la cubierta «Preparando fotograma…», compartida por /tv y Netflix.
+
+    Returns:
+        El contenido de ``cover.css``.
+
+    Raises:
+        WebFilesError: Si no se puede leer ``cover.css``.
+    """
+    try:
+        return COVER_CSS.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise WebFilesError(f"No se puede leer {COVER_CSS}: {exc}") from exc

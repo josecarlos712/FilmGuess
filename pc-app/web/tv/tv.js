@@ -1,4 +1,5 @@
-// Tele (/tv): pantalla de espera con QR y marcador, y «Preparando fotograma…».
+// Tele (/tv): pantalla de espera con QR y marcador, y «Preparando fotograma…»
+// (la cubierta animada de web/cover.css, la misma que tapa Netflix).
 // Escucha /tv/ws (solo desde el propio PC, sin token) y no envía órdenes.
 import { TEXTOS } from "./textos.js";
 
@@ -22,8 +23,18 @@ function renderNotice(error) {
   aviso.classList.toggle("hidden", !error);
 }
 
+// Lo pintado la última vez, para animar lo que cambia: quién sube o baja (FLIP) y
+// cuántos puntos gana o pierde cada uno.
+let shown = new Map(); // nombre -> puntos
+let rendered = false;
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
 function renderPlayers(players) {
   const list = $("jugadores");
+  const before = new Map();
+  for (const row of list.children) before.set(row.dataset.name, row.getBoundingClientRect().top);
+  // La entrada escalonada solo la primera vez que hay jugadores; luego las filas se mueven.
+  list.classList.toggle("settled", rendered && shown.size > 0);
   list.replaceChildren();
   list.classList.toggle("many", players.length > MANY_PLAYERS);
   const top = players.length ? players[0].puntos : null;
@@ -42,9 +53,37 @@ function renderPlayers(players) {
     points.textContent = String(p.puntos);
     points.setAttribute("aria-label", `${p.puntos} ${TEXTOS.puntos(p.puntos)}`);
     row.append(rank, name, points);
+    row.dataset.name = p.nombre;
+    row.style.setProperty("--i", String(i));
+    const old = shown.get(p.nombre);
+    if (old !== undefined && old !== p.puntos) {
+      const delta = p.puntos - old;
+      row.dataset.delta = delta > 0 ? `+${delta}` : String(delta);
+      row.classList.add("bump");
+      if (delta < 0) row.classList.add("down");
+    }
     list.appendChild(row);
   });
   $("sin-jugadores").classList.toggle("hidden", players.length > 0);
+
+  if (!reduceMotion.matches) {
+    const moved = [];
+    for (const row of list.children) {
+      const top = before.get(row.dataset.name);
+      if (top === undefined) continue;
+      const dy = top - row.getBoundingClientRect().top;
+      if (!dy) continue;
+      row.style.transform = `translateY(${dy}px)`;
+      moved.push(row);
+    }
+    void list.offsetHeight; // fija la posición de partida antes de soltar las filas
+    for (const row of moved) {
+      row.classList.add("moving");
+      row.style.transform = "";
+    }
+  }
+  shown = new Map(players.map((p) => [p.nombre, p.puntos]));
+  rendered = players.length > 0 || rendered;
 }
 
 async function loadAddress() {

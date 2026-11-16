@@ -1,0 +1,363 @@
+/*
+ * «Preparando fotograma…»: la cubierta que se ve en la tele mientras Netflix carga.
+ * La usan dos sitios con el mismo marcado (ver `cover_markup` en netflix_api.js y
+ * tv/index.html): la página /tv y la capa que se inyecta en el reproductor de Netflix.
+ *
+ * Es una sala de proyección: el haz del proyector parpadea, la cola de arranque gira
+ * dentro del visor mientras enfoca, la película corre por debajo y el grano no para.
+ * Solo se animan transform y opacity (salvo el brillo del texto, que es pequeño).
+ * Movimiento constante = lineal; entradas = ease-out; respirar = ease-in-out.
+ */
+
+.fg-cover {
+  --u: min(1vw, calc(100vh / 56.25));
+  --fgc-out: cubic-bezier(0.19, 1, 0.22, 1); /* ease-out expo */
+  --fgc-inout: cubic-bezier(0.645, 0.045, 0.355, 1); /* ease-in-out cubic */
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: calc(var(--u) * 3.2);
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  background: var(--p-bg);
+  color: var(--p-ink);
+  font-family: var(--font-text);
+  -webkit-font-smoothing: antialiased;
+}
+.fg-cover *,
+.fg-cover *::before,
+.fg-cover *::after {
+  box-sizing: border-box;
+}
+
+/* --- Ambiente: brillo, haz del proyector, grano y viñeta ------------------------- */
+
+.fgc-glow,
+.fgc-beam,
+.fgc-grain,
+.fgc-vignette {
+  position: absolute;
+  pointer-events: none;
+}
+.fgc-glow {
+  inset: 0;
+  z-index: -3;
+  background: radial-gradient(
+    closest-side at 50% 46%,
+    color-mix(in srgb, var(--p-accent) 34%, transparent),
+    transparent
+  );
+  animation: fgc-breathe 3600ms var(--fgc-inout) infinite alternate;
+}
+.fgc-beam {
+  left: 50%;
+  top: -10%;
+  z-index: -2;
+  width: calc(var(--u) * 70);
+  height: 120%;
+  margin-left: calc(var(--u) * -35);
+  clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--p-ink) 16%, transparent),
+    transparent 75%
+  );
+  transform-origin: 50% 0;
+  animation: fgc-flicker 2200ms steps(1, end) infinite;
+}
+.fgc-grain {
+  inset: -50%;
+  z-index: 2;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: fgc-grain 900ms steps(6) infinite;
+}
+.fgc-vignette {
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(ellipse at center, transparent 55%, rgb(0 0 0 / 0.65));
+}
+
+/* --- Visor con la cola de arranque ------------------------------------------------ */
+
+.fgc-finder {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: calc(var(--u) * 34);
+  aspect-ratio: 16 / 9;
+  animation: fgc-in 900ms var(--fgc-out) both;
+}
+.fgc-corners {
+  --c: var(--p-accent);
+  --l: calc(var(--u) * 3);
+  --w: 2px;
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(var(--c), var(--c)) top left / var(--l) var(--w) no-repeat,
+    linear-gradient(var(--c), var(--c)) top left / var(--w) var(--l) no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / var(--l) var(--w) no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / var(--w) var(--l) no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / var(--l) var(--w) no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / var(--w) var(--l) no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / var(--l) var(--w) no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / var(--w) var(--l) no-repeat;
+  animation: fgc-focus 2400ms var(--fgc-inout) infinite alternate;
+}
+.fgc-rec {
+  position: absolute;
+  top: calc(var(--u) * 1.4);
+  left: calc(var(--u) * 1.6);
+  width: calc(var(--u) * 0.9);
+  height: calc(var(--u) * 0.9);
+  border-radius: 50%;
+  background: var(--p-danger);
+  animation: fgc-blink 1200ms steps(1, end) infinite;
+}
+.fgc-leader {
+  position: relative;
+  height: 86%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--p-ink) 40%, transparent);
+  box-shadow: inset 0 0 0 calc(var(--u) * 1.6) var(--p-bg),
+    inset 0 0 0 calc(var(--u) * 1.6 + 1px) color-mix(in srgb, var(--p-ink) 22%, transparent);
+  overflow: hidden;
+  animation: fgc-rack 2400ms var(--fgc-inout) infinite alternate;
+}
+.fgc-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--p-accent) 70%, transparent),
+    color-mix(in srgb, var(--p-accent) 8%, transparent) 30%,
+    transparent 60%
+  );
+  animation: fgc-spin 1600ms linear infinite;
+}
+.fgc-leader::before,
+.fgc-leader::after {
+  content: "";
+  position: absolute;
+  background: color-mix(in srgb, var(--p-ink) 30%, transparent);
+}
+.fgc-leader::before {
+  left: 50%;
+  top: -10%;
+  bottom: -10%;
+  width: 1px;
+}
+.fgc-leader::after {
+  top: 50%;
+  left: -10%;
+  right: -10%;
+  height: 1px;
+}
+.fgc-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--u) * 1.4);
+  height: calc(var(--u) * 1.4);
+  margin: calc(var(--u) * -0.7) 0 0 calc(var(--u) * -0.7);
+  border-radius: 50%;
+  background: var(--p-accent);
+  box-shadow: 0 0 calc(var(--u) * 2) var(--p-accent);
+  animation: fgc-pulse 1600ms var(--fgc-inout) infinite;
+}
+
+/* --- Texto ------------------------------------------------------------------------ */
+
+.fg-cover .fgc-label {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: calc(var(--u) * 4.4);
+  letter-spacing: var(--display-tracking);
+  color: var(--p-ink);
+  background: linear-gradient(
+      100deg,
+      var(--p-muted) 35%,
+      var(--p-ink) 50%,
+      var(--p-muted) 65%
+    )
+    0 0 / 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation:
+    fgc-in 900ms var(--fgc-out) 120ms both,
+    fgc-shine 2600ms linear 400ms infinite;
+}
+
+/* --- Película que corre ----------------------------------------------------------- */
+
+.fgc-strip {
+  --fh: calc(var(--u) * 6);
+  --fw: calc(var(--fh) * 1.5);
+  position: relative;
+  width: calc(var(--u) * 56);
+  height: calc(var(--fh) + var(--u) * 3);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+  animation: fgc-in 900ms var(--fgc-out) 240ms both;
+}
+.fgc-reel {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--fw) * 24);
+  background:
+    /* perforaciones arriba y abajo */
+    repeating-linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--p-ink) 55%, transparent) 0 calc(var(--u) * 0.8),
+        transparent calc(var(--u) * 0.8) calc(var(--fw) / 3)
+      )
+      0 calc(var(--u) * 0.35) / 100% calc(var(--u) * 0.6) no-repeat,
+    repeating-linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--p-ink) 55%, transparent) 0 calc(var(--u) * 0.8),
+        transparent calc(var(--u) * 0.8) calc(var(--fw) / 3)
+      )
+      0 calc(100% - var(--u) * 0.35) / 100% calc(var(--u) * 0.6) no-repeat,
+    /* fotogramas de tonos distintos, separados por una línea */
+    repeating-linear-gradient(
+        90deg,
+        #3a3530 0 calc(var(--fw) - 4px),
+        var(--p-surface) calc(var(--fw) - 4px) var(--fw),
+        #2a2f33 var(--fw) calc(var(--fw) * 2 - 4px),
+        var(--p-surface) calc(var(--fw) * 2 - 4px) calc(var(--fw) * 2),
+        #463a2f calc(var(--fw) * 2) calc(var(--fw) * 3 - 4px),
+        var(--p-surface) calc(var(--fw) * 3 - 4px) calc(var(--fw) * 3),
+        #2d2d2d calc(var(--fw) * 3) calc(var(--fw) * 4 - 4px),
+        var(--p-surface) calc(var(--fw) * 4 - 4px) calc(var(--fw) * 4)
+      )
+      0 calc(var(--u) * 1.5) / 100% var(--fh) no-repeat,
+    var(--p-surface);
+  animation: fgc-run 3200ms linear infinite;
+}
+.fgc-gate {
+  /* la ventanilla del proyector: el fotograma que «se elige» */
+  position: absolute;
+  left: 50%;
+  top: calc(var(--u) * 1.5 - 3px);
+  width: calc(var(--fw) + 2px);
+  height: calc(var(--fh) + 6px);
+  margin-left: calc(var(--fw) / -2 - 1px);
+  border: 2px solid var(--p-accent);
+  border-radius: 4px;
+  box-shadow: 0 0 calc(var(--u) * 2) color-mix(in srgb, var(--p-accent) 50%, transparent);
+  animation: fgc-pulse 1600ms var(--fgc-inout) infinite;
+}
+
+/* --- Salida: el fotograma ya está quieto ----------------------------------------- */
+
+.fg-cover.fgc-out {
+  pointer-events: none;
+  animation: fgc-leave 260ms var(--fgc-out) forwards;
+}
+
+/* --- Animaciones ------------------------------------------------------------------ */
+
+@keyframes fgc-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--u) * 1.2)) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fgc-leave {
+  to {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+@keyframes fgc-breathe {
+  from {
+    opacity: 0.45;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+@keyframes fgc-flicker {
+  0% { opacity: 0.9; }
+  12% { opacity: 0.7; }
+  20% { opacity: 1; }
+  48% { opacity: 0.82; }
+  53% { opacity: 0.95; }
+  77% { opacity: 0.75; }
+  85% { opacity: 1; }
+}
+@keyframes fgc-grain {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-6%, 4%); }
+  40% { transform: translate(5%, -7%); }
+  60% { transform: translate(-3%, 8%); }
+  80% { transform: translate(7%, 2%); }
+  100% { transform: translate(-4%, -5%); }
+}
+@keyframes fgc-focus {
+  from { transform: scale(1.04); opacity: 0.7; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes fgc-rack {
+  from { opacity: 0.55; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes fgc-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes fgc-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+@keyframes fgc-blink {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+}
+@keyframes fgc-shine {
+  from { background-position: 100% 0; }
+  to { background-position: -150% 0; }
+}
+@keyframes fgc-run {
+  to { transform: translateX(calc(var(--fw) * -4)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fgc-glow,
+  .fgc-beam,
+  .fgc-grain,
+  .fgc-finder,
+  .fgc-corners,
+  .fgc-rec,
+  .fgc-leader,
+  .fgc-sweep,
+  .fgc-dot,
+  .fg-cover .fgc-label,
+  .fgc-strip,
+  .fgc-reel,
+  .fgc-gate,
+  .fg-cover.fgc-out {
+    animation: none;
+  }
+  .fg-cover .fgc-label {
+    -webkit-text-fill-color: currentColor;
+    background: none;
+  }
+}

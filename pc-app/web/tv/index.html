@@ -14,19 +14,27 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/static/system.css" />
+    <link rel="stylesheet" href="/static/cover.css" />
     <link rel="stylesheet" href="/static/tv/tv.css" />
   </head>
   <body>
     <!-- Pantalla de la tele: se transmite tal cual. Sin navegación ni controles. -->
     <main class="tv">
+      <div class="ambient" aria-hidden="true">
+        <div class="ambient-glow"></div>
+        <div class="ambient-glow two"></div>
+        <div class="fgc-grain"></div>
+      </div>
+
       <section id="espera" class="screen waiting" aria-labelledby="logo">
         <div class="brand">
           <h1 id="logo" class="logo" data-enter>
-            <span data-text="logo1"></span>
-            <span class="logo-accent" data-text="logo2"></span>
+            <span class="logo-line"><span class="logo-word" data-text="logo1"></span></span>
+            <span class="logo-line"><span class="logo-word logo-accent" data-text="logo2"></span></span>
           </h1>
           <div class="join" data-enter="2">
             <div class="qr">
+              <span class="qr-scan" aria-hidden="true"></span>
               <img id="qr" src="/pairing/qr.svg" alt="" width="240" height="240" />
             </div>
             <div class="join-text">
@@ -46,9 +54,19 @@
         <p id="aviso" class="notice hidden" role="status"></p>
       </section>
 
-      <section id="cargando" class="screen loading hidden" aria-live="polite">
-        <p class="loading-title" data-text="cargando"></p>
-        <div class="progress loading-bar"></div>
+      <!-- Mismo marcado que la cubierta de Netflix (web/cover.css y netflix_api.js). -->
+      <section id="cargando" class="fg-cover hidden" aria-live="polite">
+        <div class="fgc-glow"></div>
+        <div class="fgc-beam"></div>
+        <div class="fgc-finder" aria-hidden="true">
+          <div class="fgc-corners"></div>
+          <div class="fgc-rec"></div>
+          <div class="fgc-leader"><div class="fgc-sweep"></div><div class="fgc-dot"></div></div>
+        </div>
+        <p class="fgc-label" data-text="cargando"></p>
+        <div class="fgc-strip" aria-hidden="true"><div class="fgc-reel"></div><div class="fgc-gate"></div></div>
+        <div class="fgc-vignette"></div>
+        <div class="fgc-grain"></div>
       </section>
 
       <p id="conexion" class="connection hidden" role="status" data-text="reconectando"></p>

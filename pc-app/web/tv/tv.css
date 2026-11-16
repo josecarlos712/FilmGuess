@@ -6,6 +6,8 @@
 :root {
   --u: min(1vw, calc(100vh / 56.25));
   --pad: calc(var(--u) * 5);
+  --out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --inout: cubic-bezier(0.645, 0.045, 0.355, 1);
 }
 
 html,
@@ -52,6 +54,19 @@ body {
 .logo-accent {
   color: var(--p-accent);
 }
+/* El logo sube línea a línea desde detrás de una máscara. */
+.logo-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+}
+.logo-word {
+  display: inline-block;
+  animation: tv-rise 1100ms var(--out-expo) 120ms both;
+}
+.logo-line + .logo-line .logo-word {
+  animation-delay: 240ms;
+}
 
 .join {
   display: flex;
@@ -59,6 +74,8 @@ body {
   gap: calc(var(--u) * 2.4);
 }
 .qr {
+  position: relative;
+  overflow: hidden;
   flex: none;
   padding: calc(var(--u) * 0.9);
   border-radius: var(--radius-m);
@@ -67,6 +84,23 @@ body {
 .qr img {
   width: calc(var(--u) * 13);
   height: calc(var(--u) * 13);
+}
+/* Una línea de escáner bronce que baja por el QR cada pocos segundos. */
+.qr-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 18%;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in srgb, var(--p-accent) 45%, transparent) 85%,
+    var(--p-accent)
+  );
+  opacity: 0;
+  animation: tv-scan 4200ms var(--inout) 1200ms infinite;
+  pointer-events: none;
 }
 .join-text {
   display: grid;
@@ -118,6 +152,7 @@ body {
   --row: calc(var(--u) * 2.9);
 }
 .player {
+  position: relative;
   display: grid;
   grid-template-columns: calc(var(--row) * 0.75) minmax(0, 1fr) auto;
   align-items: baseline;
@@ -126,6 +161,34 @@ body {
   min-height: var(--row);
   border-bottom: 1px solid var(--p-line);
   font-size: max(calc(var(--row) * 0.42), calc(var(--u) * 1.7));
+}
+.player {
+  animation: tv-row 700ms var(--out-expo) calc(var(--i, 0) * 70ms) both;
+}
+.players.settled .player {
+  animation: none;
+}
+.player.moving {
+  transition: transform 650ms var(--inout);
+}
+.player-points {
+  display: inline-block;
+}
+.player.bump .player-points {
+  animation: tv-bump 900ms var(--out-expo);
+}
+.player.bump::after {
+  content: attr(data-delta);
+  position: absolute;
+  right: 0;
+  top: 50%;
+  font-family: var(--font-mono);
+  color: var(--p-accent);
+  pointer-events: none;
+  animation: tv-float 1400ms var(--out-expo) forwards;
+}
+.player.bump.down::after {
+  color: var(--p-danger);
 }
 .player:last-child {
   border-bottom: 0;
@@ -144,6 +207,9 @@ body {
 .player.leader .player-points {
   color: var(--p-accent);
 }
+.player.leader .player-rank {
+  color: var(--p-accent);
+}
 
 .notice {
   position: absolute;
@@ -157,23 +223,6 @@ body {
   text-overflow: ellipsis;
 }
 
-/* --- Cargando ----------------------------------------------------------------- */
-
-.loading {
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: calc(var(--u) * 3);
-}
-.loading-title {
-  font-family: var(--font-display);
-  font-size: calc(var(--u) * 4.4);
-  letter-spacing: var(--display-tracking);
-}
-.loading-bar {
-  width: calc(var(--u) * 22);
-}
-
 /* --- Conexión perdida --------------------------------------------------------- */
 
 .connection {
@@ -185,4 +234,137 @@ body {
   background: var(--p-surface-2);
   font-size: calc(var(--u) * 1.7);
   color: var(--p-muted);
+}
+
+/* --- Ambiente: dos luces que derivan despacio y grano de película --------------------- */
+
+.ambient {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ambient-glow {
+  position: absolute;
+  left: -10%;
+  top: -20%;
+  width: 70%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--p-accent) 22%, transparent),
+    transparent
+  );
+  animation: tv-drift 18s var(--inout) infinite alternate;
+}
+.ambient-glow.two {
+  left: auto;
+  right: -15%;
+  top: auto;
+  bottom: -35%;
+  width: 60%;
+  opacity: 0.7;
+  animation-duration: 23s;
+  animation-direction: alternate-reverse;
+}
+.ambient .fgc-grain {
+  opacity: 0.045;
+}
+.waiting {
+  z-index: 1;
+}
+.waiting:not(.hidden) {
+  animation: tv-fade 600ms var(--out-expo) both;
+}
+
+@keyframes tv-rise {
+  from {
+    transform: translateY(105%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes tv-scan {
+  0% {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  10% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(560%);
+  }
+  45%,
+  100% {
+    opacity: 0;
+    transform: translateY(560%);
+  }
+}
+@keyframes tv-row {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--u) * 2));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes tv-bump {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.45);
+    color: var(--p-accent);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes tv-float {
+  from {
+    opacity: 1;
+    transform: translate(calc(var(--u) * 2.5), -50%);
+  }
+  to {
+    opacity: 0;
+    transform: translate(calc(var(--u) * 2.5), -180%);
+  }
+}
+@keyframes tv-drift {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(18%, 22%) scale(1.15);
+  }
+}
+@keyframes tv-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-word,
+  .qr-scan,
+  .player,
+  .player.bump .player-points,
+  .player.bump::after,
+  .ambient-glow,
+  .ambient .fgc-grain,
+  .waiting:not(.hidden) {
+    animation: none;
+  }
+  .player.moving {
+    transition: none;
+  }
 }

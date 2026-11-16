@@ -37,19 +37,44 @@
     }
     const root = document.body || document.documentElement;
     if (!root) return false;
-    const box = document.createElement("div");
+    // Mismo marcado que la pantalla de carga de /tv (web/cover.css).
+    const div = (cls, ...kids) => {
+      const node = document.createElement("div");
+      node.className = cls;
+      node.append(...kids);
+      return node;
+    };
+    const box = div("fg-cover");
     box.id = "fg-cover";
+    box.setAttribute("role", "status");
     const label = document.createElement("p");
+    label.className = "fgc-label";
     label.textContent = message || TEXTS.cover || "";
-    const bar = document.createElement("div");
-    bar.className = "fg-bar";
-    box.append(label, bar);
+    box.append(
+      div("fgc-glow"),
+      div("fgc-beam"),
+      div(
+        "fgc-finder",
+        div("fgc-corners"),
+        div("fgc-rec"),
+        div("fgc-leader", div("fgc-sweep"), div("fgc-dot")),
+      ),
+      label,
+      div("fgc-strip", div("fgc-reel"), div("fgc-gate")),
+      div("fgc-vignette"),
+      div("fgc-grain"),
+    );
     root.appendChild(box);
     return true;
   };
+  // Se quita al momento (el id deja de existir) y se desvanece en 260 ms.
   const uncover = () => {
     const old = document.getElementById("fg-cover");
-    if (old) old.remove();
+    if (old) {
+      old.removeAttribute("id");
+      old.classList.add("fgc-out");
+      setTimeout(() => old.remove(), 300);
+    }
     return true;
   };
   if (/^\/watch\//.test(location.pathname) && !cover()) {
@@ -169,19 +194,35 @@
     const inner = document.createElement("div");
     inner.className = "fg-reveal-inner";
     if (info.poster) {
+      const frame = document.createElement("div");
+      frame.className = "fg-poster";
       const img = document.createElement("img");
       img.src = info.poster;
       img.alt = "";
       img.addEventListener("error", () => {
-        img.remove();
+        frame.remove();
         inner.classList.add("fg-no-poster");
       });
-      inner.appendChild(img);
+      frame.appendChild(img);
+      inner.appendChild(frame);
     }
     const caption = document.createElement("div");
     caption.className = "fg-reveal-caption";
     const title = document.createElement("h1");
-    title.textContent = info.title;
+    // Palabra a palabra, para que el título suba escalonado.
+    String(info.title)
+      .split(/(\s+)/)
+      .forEach((part, i) => {
+        if (/^\s+$/.test(part) || !part) {
+          title.append(part);
+          return;
+        }
+        const word = document.createElement("span");
+        word.className = "fg-word";
+        word.style.setProperty("--i", String(i / 2));
+        word.textContent = part;
+        title.appendChild(word);
+      });
     caption.appendChild(title);
     if (info.original) {
       const original = document.createElement("p");
@@ -223,8 +264,9 @@
     box.appendChild(head);
     if (data.hints && data.hints.length) {
       const list = document.createElement("ol");
-      for (const hint of data.hints) {
+      for (const [index, hint] of data.hints.entries()) {
         const item = document.createElement("li");
+        item.style.setProperty("--i", String(index));
         const label = document.createElement("span");
         label.className = "fg-hint-label" + (hint.long ? " fg-long-label" : "");
         label.textContent = hint.label;

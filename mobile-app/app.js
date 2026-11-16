@@ -86,7 +86,17 @@ function setLink(stateName) {
 
 const NAV_FOR = { buscar: "buscar", tiempo: "buscar", ronda: "ronda", jugadores: "jugadores" };
 
+// Orden de las vistas: decide si la nueva entra desde la derecha (avanzar) o la izquierda.
+const VIEW_ORDER = ["conexion", "buscar", "tiempo", "ronda", "jugadores"];
+const STEP_ORDER = ["buscar", "ronda", "jugadores"];
+
 function show(view) {
+  const from = VIEW_ORDER.indexOf(state.view);
+  const to = VIEW_ORDER.indexOf(view);
+  $("main").dataset.dir = from < 0 || from === to ? "" : to > from ? "fwd" : "back";
+  const stepIndex = STEP_ORDER.indexOf(NAV_FOR[view]);
+  $("nav").style.setProperty("--idx", String(Math.max(stepIndex, 0)));
+  $("nav").classList.toggle("no-step", stepIndex < 0);
   state.view = view;
   for (const section of document.querySelectorAll(".view")) {
     section.classList.toggle("hidden", section.id !== `view-${view}`);
@@ -226,6 +236,8 @@ function posterNode(movie, className) {
     img.loading = "lazy";
     img.decoding = "async";
     img.addEventListener("error", () => img.replaceWith(el("div", `${className} blank`)));
+    img.addEventListener("load", () => img.classList.add("loaded"), { once: true });
+    if (img.complete) img.classList.add("loaded");
     return img;
   }
   return el("div", `${className} blank`);
@@ -234,8 +246,9 @@ function posterNode(movie, className) {
 function renderResults(movies, fresh) {
   const list = $("resultados");
   if (fresh) list.replaceChildren();
-  for (const movie of movies) {
+  for (const [index, movie] of movies.entries()) {
     const item = el("li");
+    item.style.setProperty("--i", String(index)); // escalonado dentro de cada tanda
     const button = el("button", "poster-card");
     button.type = "button";
     const frame = el("span", "poster-frame");
@@ -338,7 +351,10 @@ function renderRound() {
   info.replaceChildren();
   const revealed = Boolean(round && round.revelada);
   if (loading) {
-    info.append(el("p", "round-title", TEXTOS.cargandoTele), el("div", "progress"));
+    const projector = el("div", "m-projector");
+    projector.setAttribute("aria-hidden", "true");
+    projector.append(el("div", "m-reel"), el("div", "m-film"));
+    info.append(projector, el("p", "round-title", TEXTOS.cargandoTele));
   } else if (round) {
     const head = el("div", "round-head");
     head.append(el("p", "round-value", TEXTOS.vale(round.valor)));
@@ -399,12 +415,15 @@ $("btn-clip").addEventListener("click", (e) =>
 $("btn-saltar").addEventListener("click", (e) =>
   run(e.currentTarget, "error-ronda", () => state.api.skip(), TEXTOS.mostrando),
 );
-$("btn-dar").addEventListener("click", (e) =>
-  run(e.currentTarget, "error-ronda", async () => {
+$("btn-dar").addEventListener("click", (e) => {
+  const button = e.currentTarget;
+  run(button, "error-ronda", async () => {
+    const winners = state.picked.size;
     await state.api.award([...state.picked]);
     state.picked.clear();
-  }),
-);
+    if (winners) confetti(button);
+  });
+});
 $("btn-ver").addEventListener("click", (e) =>
   run(e.currentTarget, "error-ronda", async () => {
     state.peek = await state.api.peek();
@@ -417,6 +436,7 @@ $("btn-acierta").addEventListener("click", (e) =>
     state.risk = null;
     await state.api.reveal();
     await state.api.award([winner]);
+    confetti($("btn-acierta"));
   }),
 );
 $("btn-restar").addEventListener("click", (e) =>
@@ -424,8 +444,75 @@ $("btn-restar").addEventListener("click", (e) =>
     const loser = state.risk;
     state.risk = null;
     await state.api.fail([loser]);
+    shake($("fallo"));
   }),
 );
+
+// --- Efectos -----------------------------------------------------------------------
+
+/** Desliza las filas desde donde estaban (técnica FLIP): solo transform. */
+function flip(list, before) {
+  if (reduceMotion.matches || !before.size) return;
+  const moved = [];
+  for (const row of list.children) {
+    const top = before.get(row.dataset.id);
+    if (top === undefined) continue;
+    const dy = top - row.getBoundingClientRect().top;
+    if (!dy) continue;
+    row.style.transform = `translateY(${dy}px)`;
+    moved.push(row);
+  }
+  void list.offsetHeight; // fija el punto de partida antes de soltarlas
+  for (const row of moved) {
+    row.classList.add("moving");
+    row.style.transform = "";
+  }
+}
+
+/** Sacude una tarjeta (respuesta fallida). */
+function shake(node) {
+  if (reduceMotion.matches || !node) return;
+  node.classList.remove("shake");
+  void node.offsetWidth;
+  node.classList.add("shake");
+  node.addEventListener("animationend", () => node.classList.remove("shake"), { once: true });
+}
+
+/** Lluvia de confeti bronce desde un elemento (acierto). Sale por arriba y cae. */
+function confetti(origin) {
+  if (reduceMotion.matches || !origin || !document.body.animate) return;
+  const box = origin.getBoundingClientRect();
+  const x0 = box.left + box.width / 2;
+  const y0 = box.top + box.height / 2;
+  const colors = ["#a08672", "#c9b29d", "#f2f2f2", "#7d6553", "#e3cdb6"];
+  for (let i = 0; i < 36; i += 1) {
+    const bit = el("span", "m-confetti");
+    bit.style.background = colors[i % colors.length];
+    if (i % 3 === 0) bit.style.borderRadius = "50%";
+    document.body.appendChild(bit);
+    const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.9;
+    const speed = 160 + Math.random() * 220;
+    const dx = Math.cos(angle) * speed;
+    const dy = Math.sin(angle) * speed;
+    const spin = (Math.random() - 0.5) * 900;
+    const at = (x, y, r, s) => `translate(${x0 + x}px, ${y0 + y}px) rotate(${r}deg) scale(${s})`;
+    bit
+      .animate(
+        [
+          { transform: at(0, 0, 0, 0.6), opacity: 1 },
+          { transform: at(dx, dy, spin / 2, 1), opacity: 1, offset: 0.45 },
+          { transform: at(dx * 1.25, dy + 260, spin, 0.9), opacity: 0 },
+        ],
+        {
+          duration: 1100 + Math.random() * 500,
+          easing: "cubic-bezier(0.23, 1, 0.32, 1)",
+          delay: Math.random() * 80,
+          fill: "forwards",
+        },
+      )
+      .finished.then(() => bit.remove(), () => bit.remove());
+  }
+}
 $("btn-ajustar").addEventListener("click", () => {
   state.adjust = !state.adjust;
   renderScore();
@@ -448,11 +535,25 @@ $("btn-nueva").addEventListener("click", (e) =>
 
 // --- Marcador ----------------------------------------------------------------------
 
+// Puntos de la última vez que se pintó el marcador, para animar quién sube y cuánto.
+let shownScore = null; // Map id -> puntos
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
 function renderScore() {
   const list = $("marcador");
+  const before = new Map();
+  for (const row of list.children) before.set(row.dataset.id, row.getBoundingClientRect().top);
   list.replaceChildren();
   for (const p of state.players) {
     const row = el("li", "score-row");
+    row.dataset.id = String(p.id);
+    const old = shownScore && shownScore.get(String(p.id));
+    if (old !== undefined && old !== null && old !== p.puntos) {
+      const delta = p.puntos - old;
+      row.dataset.delta = delta > 0 ? `+${delta}` : String(delta);
+      row.classList.add("bump");
+      if (delta < 0) row.classList.add("down");
+    }
     const name = el("span", "score-name", p.nombre);
     const points = el("span", "score-points num", String(p.puntos));
     const minus = el("button", "round-btn", "−");
@@ -466,6 +567,8 @@ function renderScore() {
     row.append(name, minus, points, plus);
     list.appendChild(row);
   }
+  flip(list, before);
+  shownScore = new Map(state.players.map((p) => [String(p.id), p.puntos]));
   list.classList.toggle("adjust", state.adjust);
   $("btn-ajustar").textContent = state.adjust ? TEXTOS.terminarCorregir : TEXTOS.corregir;
   $("btn-ajustar").classList.toggle("hidden", state.players.length === 0);
