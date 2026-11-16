@@ -346,7 +346,11 @@
       heading.className = "fg-scores-title";
       heading.textContent = data.hintsTitle || "";
       const list = document.createElement("dl");
+      // La frase va aparte, a todo el ancho bajo pistas y marcador.
+      const quote = document.createElement("dl");
+      quote.className = "fg-quote";
       data.hints.forEach((hint, i) => {
+        const target = hint.long ? quote : list;
         const label = document.createElement("dt");
         label.style.setProperty("--i", String(i));
         label.textContent = hint.label;
@@ -364,10 +368,17 @@
           label.classList.add("fg-unseen");
           text.classList.add("fg-unseen");
         }
-        list.append(label, text);
+        target.append(label, text);
       });
       block.append(heading, list);
       extra.prepend(block);
+      if (quote.children.length) {
+        const wrap = document.createElement("section");
+        wrap.className = "fg-all-hints fg-quote-block";
+        wrap.appendChild(quote);
+        extra.appendChild(wrap);
+      }
+      fitReveal();
     }
     const players = data.players || [];
     if (!players.length) return true;
@@ -402,13 +413,28 @@
       list.appendChild(row);
     });
     box.appendChild(list);
-    if (extra) extra.appendChild(box);
-    else {
+    if (extra) {
+      extra.appendChild(box);
+      fitReveal();
+    } else {
       box.classList.add("fg-floating");
       (document.fullscreenElement || document.body).appendChild(box);
     }
     return true;
   };
+
+  // Si pistas y marcador no caben en la pantalla, encoge su letra hasta que quepan.
+  function fitReveal() {
+    const reveal = document.getElementById("fg-reveal");
+    const extra = reveal && reveal.querySelector(".fg-reveal-extra");
+    if (!extra) return;
+    let scale = 1;
+    extra.style.setProperty("--hs", "1");
+    while (reveal.scrollHeight > reveal.clientHeight + 1 && scale > 0.55) {
+      scale -= 0.05;
+      extra.style.setProperty("--hs", scale.toFixed(2));
+    }
+  }
 
   function hideScores() {
     const old = document.getElementById("fg-scores");

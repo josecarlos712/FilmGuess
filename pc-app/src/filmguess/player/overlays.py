@@ -194,7 +194,7 @@ OVERLAY_CSS = """
 }
 #fg-reveal .fg-reveal-inner:has(.fg-reveal-extra) { max-width: calc(var(--u) * 116); }
 #fg-reveal .fg-reveal-inner:has(.fg-reveal-extra) { align-items: start; }
-#fg-reveal .fg-reveal-inner:has(.fg-reveal-extra) h1 { font-size: calc(var(--u) * 4.8); }
+#fg-reveal .fg-reveal-inner:has(.fg-reveal-extra) h1 { font-size: calc(var(--u) * 4.6); }
 #fg-reveal .fg-reveal-inner:has(.fg-reveal-extra) .fg-original {
   margin-top: calc(var(--u) * 0.8); font-size: calc(var(--u) * 2);
 }
@@ -206,6 +206,10 @@ OVERLAY_CSS = """
   border-top: 1px solid rgb(255 255 255 / 0.12);
 }
 #fg-reveal .fg-all-hints { animation: fg-rise 700ms var(--fg-out) 760ms both; }
+/* Orden en la rejilla: pistas | marcador, y debajo la frase a todo el ancho. */
+#fg-reveal .fg-reveal-extra > #fg-scores { order: 1; }
+#fg-reveal .fg-quote-block { order: 2; grid-column: 1 / -1; margin-top: calc(var(--u) * -1.6); }
+#fg-reveal .fg-quote { display: grid; margin: 0; }
 #fg-reveal .fg-all-hints .fg-scores-title,
 #fg-scores .fg-scores-title {
   margin: 0 0 calc(var(--u) * 1); font-size: calc(var(--u) * 1.7); color: var(--p-muted);
@@ -214,18 +218,22 @@ OVERLAY_CSS = """
 /* Cada pista en dos líneas: la etiqueta encima y la respuesta a todo el ancho. */
 #fg-reveal .fg-all-hints dl { display: grid; margin: 0; }
 #fg-reveal .fg-all-hints dt {
-  margin-top: calc(var(--u) * 1.1); font-size: calc(var(--u) * 1.4); line-height: 1.3;
+  margin-top: calc(var(--u) * 1.1 * var(--hs, 1));
+  font-size: calc(var(--u) * 1.4 * var(--hs, 1)); line-height: 1.3;
   color: var(--p-muted);
   animation: fg-in 520ms var(--fg-out) calc(900ms + var(--i, 0) * 90ms) both;
 }
 #fg-reveal .fg-all-hints dd {
-  margin: calc(var(--u) * 0.15) 0 0; font-size: calc(var(--u) * 1.85); line-height: 1.25;
+  margin: calc(var(--u) * 0.15) 0 0; font-size: calc(var(--u) * 1.85 * var(--hs, 1));
+  line-height: 1.25;
   text-wrap: pretty;
   animation: fg-in 520ms var(--fg-out) calc(900ms + var(--i, 0) * 90ms) both;
 }
 #fg-reveal .fg-all-hints dd.fg-long {
-  font-style: italic; font-size: calc(var(--u) * 1.7);
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  /* La frase entera; solo se corta si es desmesurada (más de 5 líneas a todo el ancho). */
+  font-style: italic; font-size: calc(var(--u) * 1.75 * var(--hs, 1)); line-height: 1.3;
+  max-width: 60em;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden;
 }
 #fg-reveal .fg-all-hints dd.fg-unseen { color: var(--p-accent); }
 #fg-reveal .fg-all-hints dt:first-of-type { margin-top: 0; }
@@ -253,7 +261,8 @@ OVERLAY_CSS = """
   position: relative; isolation: isolate; display: grid;
   grid-template-columns: calc(var(--u) * 2.4) minmax(0, 1fr) auto calc(var(--u) * 4.5);
   align-items: baseline; gap: calc(var(--u) * 1);
-  padding: calc(var(--u) * 0.6) calc(var(--u) * 1); font-size: calc(var(--u) * 2);
+  padding: calc(var(--u) * 0.6 * var(--hs, 1)) calc(var(--u) * 1);
+  font-size: calc(var(--u) * 2 * var(--hs, 1));
   animation: fg-in 600ms var(--fg-out) calc(950ms + var(--i, 0) * 110ms) both;
 }
 #fg-scores .fg-bar {
