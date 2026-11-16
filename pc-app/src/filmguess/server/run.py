@@ -15,6 +15,7 @@ from uvicorn.config import LOGGING_CONFIG
 
 from filmguess.catalog.db import CatalogDB
 from filmguess.catalog.importer import ImportProgress
+from filmguess.catalog.seed import install_seed
 from filmguess.catalog.service import ImportOptions, ImportSummary, db_path, run_import
 from filmguess.catalog.tmdb import TmdbClient
 from filmguess.config import AppConfig, save_config
@@ -75,12 +76,15 @@ def serve(config: AppConfig, player: Player | None = None) -> None:
 
     Raises:
         ScoreboardError: Si el marcador guardado está dañado.
+        SeedError: Si el catálogo incluido está dañado.
     """
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
     )
     data_dir = config.resolve(config.catalog.data_dir)
     log_to_file(data_dir / LOG_FILENAME)
+    if install_seed(db_path(config)):
+        print("Catálogo incluido instalado: ya se puede jugar sin importar nada.")
     db = CatalogDB(db_path(config))
     try:
         session = GameSession(

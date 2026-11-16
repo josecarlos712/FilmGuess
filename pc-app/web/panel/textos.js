@@ -62,6 +62,8 @@ export const TEXTOS = {
   sinMatch: "Sin emparejar",
   pendientes: "Pendientes",
   conNota: "Con nota de IMDb",
+  sinClave:
+    "Este catálogo viene incluido con la app: no hace falta importar nada para jugar. Para ampliarlo o corregirlo, añade una clave de TMDB en config.toml ([tmdb] api_key) y reinicia.",
   importar: "Importar o actualizar",
   importando: "Importando…",
   importarAyuda:

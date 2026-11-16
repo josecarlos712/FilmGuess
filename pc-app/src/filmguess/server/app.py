@@ -456,6 +456,7 @@ def create_app(
             "moviles": hub.count_role("movil"),
             "tele": hub.count_role("tele"),
             "catalogo": panel.stats(),
+            "editarCatalogo": panel.has_tmdb,
             "importacion": dataclasses.asdict(panel.import_state),
             "conexion": {"url": pairing_url(ip, port, panel.token), "ip": ip, "puerto": port},
         }

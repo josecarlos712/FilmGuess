@@ -59,19 +59,25 @@ python -m venv .venv
 
 > No hace falta descargar navegadores de Playwright: la app usa el Edge (o Chrome) que ya tienes instalado.
 
-### 3. Configuración y clave de TMDB
+### 3. Configuración
 
-1. Arranca una vez para crear la configuración (se copia `pc-app/config.example.toml` a `pc-app/config.toml` y se genera el código de conexión del móvil):
+`config.toml` se crea automáticamente en el primer arranque (se copia `pc-app/config.example.toml` a `pc-app/config.toml` y se genera el código de conexión del móvil). También puedes crearlo a mano con:
 
-   ```bash
-   arrancar.bat config
-   ```
+```bash
+arrancar.bat config
+```
 
-2. Consigue la clave de TMDB: crea una cuenta gratuita en [themoviedb.org](https://www.themoviedb.org/), ve a **Ajustes → API** y copia el **token de lectura de la API (v4)** o la **clave de la API (v3)**.
-3. Abre `pc-app/config.toml` y pégala en `[tmdb] api_key = "..."`. Ese fichero no se sube a Git: guarda la clave y el código de conexión.
-4. Si tu cuenta de Netflix tiene varios perfiles, pon el que se usará en `[netflix] profile_name = "..."` (sin importar mayúsculas ni acentos).
+La clave de TMDB (`[tmdb] api_key`) es **opcional**: solo hace falta para importar, corregir o añadir películas. Ese fichero no se sube a Git: guarda la clave y el código de conexión.
+
+Si tu cuenta de Netflix tiene varios perfiles, pon el que se usará en `[netflix] profile_name = "..."` (sin importar mayúsculas ni acentos).
+
+> **Solo si quieres ampliar el catálogo:** consigue la clave de TMDB. Crea una cuenta gratuita en [themoviedb.org](https://www.themoviedb.org/), ve a **Ajustes → API**, copia el **token de lectura de la API (v4)** o la **clave de la API (v3)** y pégala en `[tmdb] api_key = "..."` de `pc-app/config.toml`.
 
 ### 4. Catálogo
+
+La app incluye un catálogo listo (`pc-app/catalogo/catalogo-base.sqlite.gz`: ~52.800 películas, 3.525 con pistas) que se instala solo en `data/catalogo.sqlite` en el primer `arrancar.bat` si todavía no hay catálogo. No hay nada que importar para jugar.
+
+Para ampliarlo o actualizarlo (necesita la clave de TMDB):
 
 1. Copia tu `movies.csv` en `data/movies.csv`.
 2. Importa (empareja cada película con TMDB, enlaza los IDs de Wikidata y aplica las notas de IMDb; tarda un rato la primera vez y se puede interrumpir y reanudar):
@@ -89,6 +95,8 @@ python -m venv .venv
    ```
 
    Las frases salen de Wikiquote; si no hay, una crítica de TMDB, el eslogan, la sinopsis con el título tapado o, como último recurso, quién la dirige. En las pistas se tapa cualquier palabra del título. Las que llegan en inglés se muestran en español gracias a `data/traducciones.json` (texto original + traducción), que se reutiliza en cada descarga mientras el original no cambie. Para traducir textos nuevos: `arrancar.bat pistas --exportar-sin-traducir pendientes.json`, añade sus traducciones al fichero y aplica con `arrancar.bat pistas --aplicar-traducciones`.
+
+Para refrescar el catálogo incluido ejecuta `arrancar.bat exportar-catalogo`: elimina el historial de partidas y las notas de IMDb, porque los datos de IMDb son solo para uso personal (`--con-imdb` las conserva; no es para compartir). Sin notas de IMDb la película al azar se elige por los votos de TMDB. Los pósters se siguen cargando desde image.tmdb.org (necesita internet, no clave).
 
 ### 5. Primer inicio de sesión en Netflix
 

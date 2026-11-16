@@ -157,6 +157,11 @@ class PanelService:
         self.import_state = ImportState()
         self._import_task: asyncio.Task[None] | None = None
 
+    @property
+    def has_tmdb(self) -> bool:
+        """Si hay clave de TMDB para importar, corregir y añadir películas."""
+        return self._tmdb is not None
+
     # --- Token ---------------------------------------------------------------------
 
     def regenerate_token(self) -> str:

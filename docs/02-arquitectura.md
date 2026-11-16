@@ -39,6 +39,7 @@
 | `player/netflix_api.js` | JavaScript inyectado: acceso encapsulado a la API interna del reproductor con *fallbacks*. |
 | `player/overlays.py` | CSS que oculta los controles y el título; capa de "Revelar". |
 | `catalog/` | Base de datos, importador (CSV, TMDB, IMDb), búsqueda y selección aleatoria. |
+| `catalog/seed.py` | Catálogo incluido: `install_seed` lo instala si no hay catálogo y `export_seed` lo regenera sin historial ni notas de IMDb. |
 | `game/` | Estado de la ronda y marcador persistente. |
 | `pairing/` | Token, IP de la red local y generación del QR. |
 

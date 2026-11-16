@@ -337,3 +337,9 @@ def test_login_y_espera_por_rutas(app_parts: Parts) -> None:
     assert client.post("/panel/api/netflix-login").json() == {"ok": True}
     assert client.post("/panel/api/espera").json() == {"ok": True}
     assert [c[0] for c in player.calls] == ["open_login", "idle"]
+
+
+def test_has_tmdb_depends_on_key() -> None:
+    assert PanelService(CatalogDB(":memory:"), token="t").has_tmdb is False
+    with_key = PanelService(CatalogDB(":memory:"), token="t", tmdb=factory(FakeTmdb()))
+    assert with_key.has_tmdb is True

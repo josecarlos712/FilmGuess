@@ -113,6 +113,21 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="solo suscripción, gratis y con anuncios (sin alquiler ni compra)",
     )
+    seed = sub.add_parser(
+        "exportar-catalogo",
+        help="guarda el catálogo (sin datos privados) para incluirlo en la app",
+    )
+    seed.add_argument(
+        "--salida",
+        type=Path,
+        default=None,
+        help="ruta del .sqlite.gz (por defecto catalogo/catalogo-base.sqlite.gz)",
+    )
+    seed.add_argument(
+        "--con-imdb",
+        action="store_true",
+        help="conserva las notas de IMDb (solo para uso personal; no lo repartas)",
+    )
     sub.add_parser(
         "netflix-login",
         help="abre el navegador de la app para iniciar sesión en Netflix (ciérralo al terminar)",
@@ -153,6 +168,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _cmd_platforms(config, args)
     if command == "exportar-plataformas":
         return _cmd_export_platforms(config, args)
+    if command == "exportar-catalogo":
+        return _cmd_export_seed(config, args)
 
     if command == "servir":
         return _cmd_serve(config)
@@ -164,6 +181,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _cmd_serve(config: AppConfig) -> int:
+    from filmguess.catalog.seed import SeedError
     from filmguess.game.scoreboard import ScoreboardError
     from filmguess.server.run import serve
 
@@ -171,6 +189,9 @@ def _cmd_serve(config: AppConfig) -> int:
         serve(config)
     except ScoreboardError as exc:
         print(f"Error en el marcador: {exc.message}")
+        return 1
+    except SeedError as exc:
+        print(f"Error: {exc}")
         return 1
     except OSError as exc:
         print(f"No se pudo arrancar el servidor en el puerto {config.server.port}: {exc}")
@@ -315,6 +336,24 @@ def _cmd_export_platforms(config: AppConfig, args: argparse.Namespace) -> int:
     elif result.imdb_missing:
         print("IMDb: no hay fichero de valoraciones; usa --descargar-imdb para obtenerlo.")
     print(f"CSV: {result.rows} filas en {dest}")
+    return 0
+
+
+def _cmd_export_seed(config: AppConfig, args: argparse.Namespace) -> int:
+    from filmguess.catalog.seed import SEED_PATH, SeedError, export_seed
+    from filmguess.catalog.service import db_path
+
+    try:
+        summary = export_seed(db_path(config), args.salida or SEED_PATH, keep_imdb=args.con_imdb)
+    except SeedError as exc:
+        print(f"Error: {exc}")
+        return 1
+    print(
+        f"Catálogo exportado en {summary.path}: {summary.movies} películas, "
+        f"{summary.clues} con pistas, {summary.size_bytes / 1_000_000:.1f} MB."
+    )
+    if not args.con_imdb:
+        print("Sin notas de IMDb: el juego elegirá las películas con los votos de TMDB.")
     return 0
 
 

@@ -104,6 +104,10 @@ function renderStatus(s) {
     item.append(dt, dd);
     stats.appendChild(item);
   }
+  const canEdit = s.editarCatalogo !== false;
+  $("sin-clave").classList.toggle("hidden", canEdit);
+  $("herramientas").classList.toggle("hidden", !canEdit);
+  $("alta").classList.toggle("hidden", !canEdit);
   counts = { baja: s.catalogo.baja, sin_match: s.catalogo.sin_match };
   renderSegments();
   renderImport(s.importacion);

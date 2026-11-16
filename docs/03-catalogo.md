@@ -20,6 +20,13 @@ Se ejecuta con `arrancar.bat importar` (o con el botón del panel). Opciones: `-
 
 **Coste estimado**: unas 30.000 búsquedas y otros tantos detalles, más ~2 consultas de proveedores por fila dudosa. A ~35 peticiones/s (por debajo del límite de TMDB) son entre 30 y 60 minutos la primera vez. Después solo se procesan las películas nuevas.
 
+## Catálogo incluido
+
+- Módulo `catalog/seed.py`; el catálogo base está en `pc-app/catalogo/catalogo-base.sqlite.gz`.
+- `install_seed` solo instala si `data/catalogo.sqlite` no existe o no tiene películas; nunca sobrescribe.
+- `export_seed` vacía `random_history` y pone a NULL `imdb_rating` e `imdb_votes`, salvo con `--con-imdb`.
+- El panel oculta importar, revisar y añadir cuando no hay clave de TMDB y muestra un aviso.
+
 ## Esquema (SQLite, `data/catalogo.sqlite`)
 
 ```sql
