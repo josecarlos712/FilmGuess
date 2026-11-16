@@ -208,6 +208,30 @@ class NetflixPlayer:
         """
         await self._call(await self.browser.page(), "showHints", data)
 
+    async def notify(self, data: dict[str, Any]) -> None:
+        """Aviso breve arriba a la derecha (acierto, fallo, corrección del marcador).
+
+        Es decorativo: si la pestaña no lo admite se ignora.
+
+        Args:
+            data: ``tone`` (``good``, ``bad`` o ``info``), ``title``, ``detail`` y ``delta``.
+
+        Raises:
+            PlayerError: Solo si el navegador está cerrado.
+        """
+        await self._call_soft(await self.browser.page(), "toast", data)
+
+    async def show_scores(self, data: dict[str, Any]) -> None:
+        """Marcador de fin de ronda, dentro de la capa de «Revelar».
+
+        Args:
+            data: ``title`` y ``players`` (``name``, ``points``, ``delta``), ya ordenados.
+
+        Raises:
+            PlayerError: Solo si el navegador está cerrado.
+        """
+        await self._call_soft(await self.browser.page(), "showScores", data)
+
     async def reveal(self, info: RevealInfo) -> None:
         """Muestra el título y el póster sobre el vídeo pausado.
 

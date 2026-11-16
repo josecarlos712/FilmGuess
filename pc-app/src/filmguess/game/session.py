@@ -30,6 +30,9 @@ from filmguess.player.base import PlayerError, PlayerStatus, RevealInfo
 
 log = logging.getLogger(__name__)
 TEXT_SKIP = "Saltando escena…"
+MINUS = chr(0x2212)
+"""Signo menos tipográfico de los avisos de la tele."""
+
 T = TypeVar("T")
 
 Screen = Literal["espera", "cargando", "pelicula", "revelada"]
@@ -354,8 +357,20 @@ class GameSession:
                 continue  # ya los tiene, o falló y está fuera de la ronda
             given.append(self._give(pid, value))
             current.awarded.add(pid)
+            self._track(current, pid, value)
         await self._emit_scoreboard()
         await self._emit_state()
+        if given:
+            names = _names(given)
+            await self._notify(
+                {
+                    "tone": "good",
+                    "delta": f"+{value}",
+                    "title": f"¡{names} {'acierta' if len(given) == 1 else 'aciertan'}!",
+                    "detail": f"{value} {'punto' if value == 1 else 'puntos'} para el marcador",
+                }
+            )
+            await self._show_scores(current)
         return given
 
     def peek(self) -> Movie:
@@ -397,8 +412,19 @@ class GameSession:
                 continue
             charged.append(self._give(pid, -value))
             current.failed.add(pid)
+            self._track(current, pid, -value)
         await self._emit_scoreboard()
         await self._emit_state()
+        if charged:
+            single = len(charged) == 1
+            await self._notify(
+                {
+                    "tone": "bad",
+                    "delta": f"{MINUS}{value}",
+                    "title": f"{_names(charged)} {'falla' if single else 'fallan'}",
+                    "detail": "Fuera de esta ronda",
+                }
+            )
         return charged
 
     async def pause(self) -> None:
@@ -443,6 +469,7 @@ class GameSession:
         await self._run("reveal", self.player.reveal(info))
         self.screen = "revelada"
         await self._emit_state()
+        await self._show_scores(current)
         return movie
 
     async def idle(self) -> None:
@@ -530,6 +557,19 @@ class GameSession:
         """
         player = self._scoreboard(lambda: self.scoreboard.add_points(player_id, points))
         await self._emit_scoreboard()
+        current = self.round
+        if current is not None and points:
+            self._track(current, player_id, points)
+            await self._notify(
+                {
+                    "tone": "good" if points > 0 else "bad",
+                    "delta": f"+{points}" if points > 0 else f"{MINUS}{-points}",
+                    "title": player.name,
+                    "detail": "Corrección del marcador",
+                }
+            )
+            if self.screen == "revelada":
+                await self._show_scores(current)
         return player
 
     async def reset_points(self) -> None:
@@ -538,6 +578,38 @@ class GameSession:
         await self._emit_scoreboard()
 
     # --- Internos --------------------------------------------------------------------
+
+    # Puntos ganados o perdidos en la ronda en curso, para el marcador de fin de ronda.
+    _deltas_round: object | None = None
+    _deltas: dict[str, int]
+
+    def _track(self, current: object, player_id: str, points: int) -> None:
+        if self._deltas_round is not current:
+            self._deltas_round = current
+            self._deltas = {}
+        self._deltas[player_id] = self._deltas.get(player_id, 0) + points
+
+    async def _notify(self, data: dict[str, Any]) -> None:
+        """Aviso en la tele; es decorativo, así que un fallo no interrumpe la partida."""
+        try:
+            await self.player.notify(data)
+        except PlayerError as exc:
+            logging.getLogger(__name__).debug("Aviso no mostrado: %s", exc)
+
+    async def _show_scores(self, current: object) -> None:
+        """Marcador con lo ganado en la ronda, junto a la película revelada."""
+        deltas = self._deltas if self._deltas_round is current else {}
+        players = sorted(self.scoreboard.players, key=lambda p: -p.points)
+        data = {
+            "title": "Marcador",
+            "players": [
+                {"name": p.name, "points": p.points, "delta": deltas.get(p.id, 0)} for p in players
+            ],
+        }
+        try:
+            await self.player.show_scores(data)
+        except PlayerError as exc:
+            logging.getLogger(__name__).debug("Marcador no mostrado: %s", exc)
 
     async def _run(self, command: str, action: Awaitable[T], movie: Movie | None = None) -> T:
         async with self._lock:
@@ -640,3 +712,9 @@ def _hhmmss(seconds: int) -> str:
     hours, rest = divmod(max(0, seconds), 3600)
     minutes, secs = divmod(rest, 60)
     return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+
+def _names(players: list[Player]) -> str:
+    """«Ana», «Ana y Luis», «Ana, Luis y Marta»."""
+    names = [p.name for p in players]
+    return names[0] if len(names) == 1 else f"{', '.join(names[:-1])} y {names[-1]}"

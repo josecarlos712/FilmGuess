@@ -30,6 +30,8 @@ class FakePlayer:
         self.calls: list[tuple[str, object]] = []
         self.fail: PlayerError | None = None
         self.hints: dict[str, object] = {}
+        self.toasts: list[dict[str, object]] = []
+        self.scores: list[dict[str, object]] = []
 
     async def status(self) -> PlayerStatus:
         return PlayerStatus(browser=True, netflix_session=True)
@@ -55,6 +57,12 @@ class FakePlayer:
 
     async def show_hints(self, data: dict[str, object]) -> None:
         self.hints = data
+
+    async def notify(self, data: dict[str, object]) -> None:
+        self.toasts.append(data)
+
+    async def show_scores(self, data: dict[str, object]) -> None:
+        self.scores.append(data)
 
     async def open_login(self) -> None:
         self._check("open_login", None)

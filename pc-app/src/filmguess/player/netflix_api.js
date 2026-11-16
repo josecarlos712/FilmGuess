@@ -179,6 +179,7 @@
 
   const play = () => {
     hideReveal();
+    hideScores();
     uncover();
     const p = api();
     if (p) p.play();
@@ -282,6 +283,101 @@
     return true;
   };
 
+  // --- Avisos de lo que pasa en el móvil: arriba a la derecha, sin tapar la escena -----
+  // data: { tone: "good" | "bad" | "info", title, detail, delta }
+  const toast = (data) => {
+    let stack = document.getElementById("fg-toasts");
+    const host = document.fullscreenElement || document.body;
+    if (!stack) {
+      stack = document.createElement("div");
+      stack.id = "fg-toasts";
+      stack.className = "fg-layer";
+    }
+    if (stack.parentNode !== host) host.appendChild(stack);
+    const item = document.createElement("div");
+    item.className = `fg-toast fg-${data.tone || "info"}`;
+    if (data.delta) {
+      const badge = document.createElement("span");
+      badge.className = "fg-toast-delta";
+      badge.textContent = data.delta;
+      item.appendChild(badge);
+    }
+    const text = document.createElement("div");
+    text.className = "fg-toast-text";
+    const title = document.createElement("p");
+    title.className = "fg-toast-title";
+    title.textContent = data.title || "";
+    text.appendChild(title);
+    if (data.detail) {
+      const detail = document.createElement("p");
+      detail.className = "fg-toast-detail";
+      detail.textContent = data.detail;
+      text.appendChild(detail);
+    }
+    item.appendChild(text);
+    stack.appendChild(item);
+    while (stack.children.length > 3) stack.firstChild.remove();
+    setTimeout(() => {
+      item.classList.add("fg-toast-out");
+      setTimeout(() => item.remove(), 260);
+    }, data.ms || 3600);
+    return true;
+  };
+
+  // --- Marcador de fin de ronda: dentro de «Revelar» (la escena ya está tapada) ------
+  // data: { title, players: [{ name, points, delta }] }
+  const showScores = (data) => {
+    const old = document.getElementById("fg-scores");
+    if (old) old.remove();
+    const players = data.players || [];
+    if (!players.length) return true;
+    const box = document.createElement("section");
+    box.id = "fg-scores";
+    const heading = document.createElement("p");
+    heading.className = "fg-scores-title";
+    heading.textContent = data.title || "";
+    box.appendChild(heading);
+    const list = document.createElement("ol");
+    const top = Math.max(1, ...players.map((p) => p.points));
+    players.forEach((p, i) => {
+      const row = document.createElement("li");
+      row.style.setProperty("--i", String(i));
+      row.style.setProperty("--w", String(Math.max(0, p.points) / top));
+      if (i === 0 && p.points > 0) row.className = "fg-first";
+      const rank = document.createElement("span");
+      rank.className = "fg-rank";
+      rank.textContent = String(i + 1);
+      const name = document.createElement("span");
+      name.className = "fg-name";
+      name.textContent = p.name;
+      const pts = document.createElement("span");
+      pts.className = "fg-pts";
+      pts.textContent = String(p.points);
+      const delta = document.createElement("span");
+      delta.className = "fg-delta" + (p.delta < 0 ? " fg-neg" : "");
+      delta.textContent = p.delta ? (p.delta > 0 ? `+${p.delta}` : String(p.delta)) : "";
+      const bar = document.createElement("span");
+      bar.className = "fg-bar";
+      row.append(rank, name, delta, pts, bar);
+      list.appendChild(row);
+    });
+    box.appendChild(list);
+    const reveal = document.getElementById("fg-reveal");
+    const caption = reveal && reveal.querySelector(".fg-reveal-caption");
+    if (caption) caption.appendChild(box);
+    else {
+      box.classList.add("fg-floating");
+      (document.fullscreenElement || document.body).appendChild(box);
+    }
+    return true;
+  };
+
+  function hideScores() {
+    const old = document.getElementById("fg-scores");
+    if (old) old.remove();
+    return true;
+  }
+
   function hideHints() {
     const old = document.getElementById("fg-hints");
     if (old) old.remove();
@@ -296,6 +392,9 @@
 
   window.__fg = {
     state,
+    toast,
+    showScores,
+    hideScores,
     chooseProfile,
     clickContinue,
     seek,

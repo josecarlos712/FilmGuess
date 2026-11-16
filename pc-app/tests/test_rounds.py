@@ -198,3 +198,39 @@ def test_reparto_de_puntos_tras_revelar(client: TestClient) -> None:
     puntos = {j["nombre"]: j["puntos"] for j in marcador["jugadores"]}
     assert puntos == {"Ana": 4, "Luis": 4}
     assert sorted(ronda(client)["acertantes"]) == sorted(ids)  # type: ignore[type-var]
+
+
+def test_la_tele_avisa_de_aciertos_y_fallos_y_cierra_con_marcador(
+    client: TestClient, player: FakePlayer
+) -> None:
+    ids = []
+    for name in ("Ana", "Luis", "Marta"):
+        jugadores = client.post("/players", json={"nombre": name}, headers=HEADERS).json()
+        ids.append(next(j["id"] for j in jugadores["jugadores"] if j["nombre"] == name))
+    client.post("/play", json={"netflixId": ORIGEN, "seconds": 600}, headers=HEADERS)
+
+    client.post("/fail", json={"jugadores": ids[:1]}, headers=HEADERS)
+    assert player.toasts[-1] == {
+        "tone": "bad",
+        "delta": "\u22125",
+        "title": "Ana falla",
+        "detail": "Fuera de esta ronda",
+    }
+    assert player.scores == []  # la escena sigue: nada de marcador todavía
+
+    client.post("/reveal", headers=HEADERS)
+    assert [p["delta"] for p in player.scores[-1]["players"]] == [0, 0, -5]  # type: ignore[index]
+
+    client.post("/award", json={"jugadores": ids[1:]}, headers=HEADERS)
+    assert player.toasts[-1]["title"] == "¡Luis y Marta aciertan!"
+    assert player.toasts[-1]["delta"] == "+5"
+    final = player.scores[-1]["players"]
+    assert final == [  # ordenado por puntos, con lo ganado en la ronda
+        {"name": "Luis", "points": 5, "delta": 5},
+        {"name": "Marta", "points": 5, "delta": 5},
+        {"name": "Ana", "points": -5, "delta": -5},
+    ]
+
+    client.post(f"/players/{ids[0]}/points", json={"puntos": 1}, headers=HEADERS)
+    assert player.toasts[-1]["detail"] == "Corrección del marcador"
+    assert player.scores[-1]["players"][2] == {"name": "Ana", "points": -4, "delta": -4}  # type: ignore[index]

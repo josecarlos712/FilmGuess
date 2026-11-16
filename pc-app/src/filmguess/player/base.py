@@ -84,6 +84,14 @@ class Player(Protocol):
         """Muestra el título y el póster sobre el vídeo pausado."""
         ...
 
+    async def notify(self, data: dict[str, Any]) -> None:
+        """Aviso breve en una esquina (acierto, fallo, corrección); no tapa la escena."""
+        ...
+
+    async def show_scores(self, data: dict[str, Any]) -> None:
+        """Marcador de fin de ronda junto a la película revelada."""
+        ...
+
     async def idle(self) -> None:
         """Vuelve a la pantalla de espera."""
         ...
@@ -157,6 +165,12 @@ class UnavailablePlayer:
             PlayerError: Siempre, con ``navegador_cerrado``.
         """
         raise self._error()
+
+    async def notify(self, data: dict[str, Any]) -> None:
+        """Sin navegador no hay dónde avisar: los avisos son decorativos."""
+
+    async def show_scores(self, data: dict[str, Any]) -> None:
+        """Sin navegador no hay dónde pintar el marcador."""
 
     async def idle(self) -> None:
         """No hay nada que hacer sin navegador."""

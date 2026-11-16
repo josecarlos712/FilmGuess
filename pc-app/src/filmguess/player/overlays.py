@@ -49,13 +49,12 @@ FONTS_IMPORT = (
 """Las mismas fuentes que la tele; ``@import`` tiene que ir al principio de la hoja."""
 
 EASINGS = (
-    "--fg-out: cubic-bezier(0.19, 1, 0.22, 1);"
-    " --fg-inout: cubic-bezier(0.645, 0.045, 0.355, 1);"
+    "--fg-out: cubic-bezier(0.19, 1, 0.22, 1); --fg-inout: cubic-bezier(0.645, 0.045, 0.355, 1);"
 )
 """Curvas de las capas: ease-out expo para entrar y ease-in-out cubic para moverse."""
 
 OVERLAY_CSS = """
-#fg-reveal, #fg-hints { margin: 0; --u: min(1vw, calc(100vh / 56.25)); }
+#fg-reveal, #fg-hints, #fg-toasts, #fg-scores { margin: 0; --u: min(1vw, calc(100vh / 56.25)); }
 #fg-reveal {
   position: fixed; inset: 0; z-index: 2147483647;
   background: var(--p-bg); color: var(--p-ink);
@@ -68,9 +67,12 @@ OVERLAY_CSS = """
 }
 #fg-reveal::before {
   content: ""; position: absolute; left: 50%; top: 50%; z-index: -1;
-  width: calc(var(--u) * 90); aspect-ratio: 1; margin: calc(var(--u) * -45) 0 0 calc(var(--u) * -45);
+  width: calc(var(--u) * 90); aspect-ratio: 1;
+  margin: calc(var(--u) * -45) 0 0 calc(var(--u) * -45);
   border-radius: 50%; pointer-events: none;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--p-accent) 38%, transparent), transparent);
+  background: radial-gradient(
+    closest-side, color-mix(in srgb, var(--p-accent) 38%, transparent), transparent
+  );
   animation: fg-burst 1400ms var(--fg-out) both;
 }
 #fg-reveal .fg-reveal-inner {
@@ -158,9 +160,98 @@ OVERLAY_CSS = """
 @keyframes fg-in {
   from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; }
 }
+#fg-toasts {
+  position: fixed; top: calc(var(--u) * 2); right: calc(var(--u) * 2); z-index: 2147483647;
+  display: grid; justify-items: end; gap: calc(var(--u) * 0.8); margin: 0;
+  pointer-events: none;
+}
+#fg-toasts .fg-toast {
+  display: flex; align-items: center; gap: calc(var(--u) * 1.2);
+  max-width: calc(var(--u) * 30); padding: calc(var(--u) * 0.9) calc(var(--u) * 1.4);
+  border-radius: var(--radius-m); background: rgb(17 17 17 / 0.74);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  box-shadow: inset 3px 0 0 var(--fg-tone, var(--p-accent));
+  color: var(--p-ink); font-family: var(--font-text); -webkit-font-smoothing: antialiased;
+  animation: fg-toast-in 560ms var(--fg-out) both;
+}
+#fg-toasts .fg-good { --fg-tone: var(--p-accent); }
+#fg-toasts .fg-bad { --fg-tone: var(--p-danger); }
+#fg-toasts .fg-info { --fg-tone: var(--p-muted); }
+#fg-toasts .fg-toast-out { animation: fg-toast-out 240ms var(--fg-out) forwards; }
+#fg-toasts .fg-toast-delta {
+  flex: none; font-family: var(--font-mono); font-size: calc(var(--u) * 2.6);
+  letter-spacing: -0.04em; color: var(--fg-tone);
+  animation: fg-pop 700ms var(--fg-out) 200ms both;
+}
+#fg-toasts p { margin: 0; }
+#fg-toasts .fg-toast-title {
+  font-family: var(--font-display); font-weight: var(--display-weight);
+  font-size: calc(var(--u) * 1.9); letter-spacing: var(--display-tracking); line-height: 1.15;
+}
+#fg-toasts .fg-toast-detail {
+  margin-top: calc(var(--u) * 0.2); font-size: calc(var(--u) * 1.5); color: var(--p-muted);
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+#fg-scores {
+  margin: calc(var(--u) * 3) 0 0; padding-top: calc(var(--u) * 2);
+  border-top: 1px solid rgb(255 255 255 / 0.12);
+  animation: fg-rise 700ms var(--fg-out) 800ms both;
+}
+#fg-scores.fg-floating {
+  position: fixed; right: calc(var(--u) * 2); bottom: calc(var(--u) * 2);
+  z-index: 2147483646; width: calc(var(--u) * 32); margin: 0;
+  padding: calc(var(--u) * 1.6) calc(var(--u) * 2); border: 0;
+  border-radius: var(--radius-m); background: rgb(17 17 17 / 0.8);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  color: var(--p-ink); font-family: var(--font-text);
+}
+#fg-scores .fg-scores-title {
+  margin: 0 0 calc(var(--u) * 1); font-size: calc(var(--u) * 1.7); color: var(--p-muted);
+  text-transform: uppercase; letter-spacing: 0.12em;
+}
+#fg-scores ol { display: grid; gap: calc(var(--u) * 0.5); margin: 0; padding: 0; list-style: none; }
+#fg-scores li {
+  position: relative; isolation: isolate; display: grid;
+  grid-template-columns: calc(var(--u) * 2.4) minmax(0, 1fr) auto calc(var(--u) * 4.5);
+  align-items: baseline; gap: calc(var(--u) * 1);
+  padding: calc(var(--u) * 0.6) calc(var(--u) * 1); font-size: calc(var(--u) * 2);
+  animation: fg-in 600ms var(--fg-out) calc(950ms + var(--i, 0) * 110ms) both;
+}
+#fg-scores .fg-bar {
+  position: absolute; inset: 0; z-index: -1; border-radius: var(--radius-s);
+  background: rgb(255 255 255 / 0.06); transform-origin: left center;
+  transform: scaleX(var(--w, 0));
+  animation: fg-grow 1100ms var(--fg-out) calc(1050ms + var(--i, 0) * 110ms) both;
+}
+#fg-scores .fg-first .fg-bar {
+  background: color-mix(in srgb, var(--p-accent) 30%, transparent);
+}
+#fg-scores .fg-rank, #fg-scores .fg-pts, #fg-scores .fg-delta {
+  font-family: var(--font-mono); letter-spacing: -0.03em;
+}
+#fg-scores .fg-rank { color: var(--p-muted); }
+#fg-scores .fg-first .fg-rank, #fg-scores .fg-first .fg-pts { color: var(--p-accent); }
+#fg-scores .fg-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#fg-scores .fg-pts { text-align: right; }
+#fg-scores .fg-delta {
+  font-size: 0.8em; color: var(--p-accent);
+  animation: fg-pop 700ms var(--fg-out) calc(1500ms + var(--i, 0) * 110ms) both;
+}
+#fg-scores .fg-delta.fg-neg { color: var(--p-danger); }
+@keyframes fg-toast-in {
+  from { opacity: 0; transform: translateX(calc(100% + var(--u) * 2)); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fg-toast-out { to { opacity: 0; transform: translateX(24px); } }
+@keyframes fg-pop {
+  0% { opacity: 0; transform: scale(0.5); } 60% { opacity: 1; transform: scale(1.18); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes fg-grow { from { transform: scaleX(0); } to { transform: scaleX(var(--w, 0)); } }
 @keyframes fg-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fg-burst {
-  from { opacity: 0; transform: scale(0.6); } 40% { opacity: 1; } to { opacity: 0.7; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.6); } 40% { opacity: 1; }
+  to { opacity: 0.7; transform: scale(1); }
 }
 @keyframes fg-poster {
   from { opacity: 0; transform: translateY(calc(var(--u) * 4)) rotate(-4deg) scale(0.92); }
@@ -173,7 +264,9 @@ OVERLAY_CSS = """
 @media (prefers-reduced-motion: reduce) {
   #fg-reveal, #fg-reveal::before, #fg-reveal .fg-poster, #fg-reveal .fg-poster::after,
   #fg-reveal .fg-word, #fg-reveal .fg-original, #fg-reveal .fg-year,
-  #fg-hints, #fg-hints li > span { animation: none; }
+  #fg-hints, #fg-hints li > span, #fg-toasts .fg-toast, #fg-toasts .fg-toast-out,
+  #fg-toasts .fg-toast-delta, #fg-scores, #fg-scores li, #fg-scores .fg-bar,
+  #fg-scores .fg-delta { animation: none; }
   #fg-reveal .fg-poster::after { display: none; }
 }
 """
@@ -192,7 +285,10 @@ def page_css() -> str:
     Returns:
         El CSS completo.
     """
-    tokens = f".fg-cover, #fg-reveal, #fg-hints {{ {design_tokens()} {EASINGS} }}"
+    tokens = (
+        f".fg-cover, #fg-reveal, #fg-hints, #fg-toasts, #fg-scores"
+        f" {{ {design_tokens()} {EASINGS} }}"
+    )
     return "\n".join([FONTS_IMPORT, HIDE_CSS, tokens, cover_css(), OVERLAY_CSS])
 
 
