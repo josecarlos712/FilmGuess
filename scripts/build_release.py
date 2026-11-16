@@ -50,7 +50,7 @@ EMBED_URL = (
 )
 
 COPY_DIRS = ["pc-app/src", "pc-app/web", "pc-app/catalogo", "mobile-app"]
-COPY_FILES = ["pc-app/config.example.toml"]
+COPY_FILES = ["pc-app/config.example.toml", "LICENSE.md", "NOTICE"]
 SKIP = shutil.ignore_patterns(
     "__pycache__", "*.pyc", "*.egg-info", ".mypy_cache", ".ruff_cache", "_preview*"
 )
@@ -95,6 +95,11 @@ Para jugar
 Catálogo
   El juego trae su catálogo de películas. Las actualizaciones llegan como
   archivos aparte; sigue las instrucciones que vengan con cada una.
+
+Licencia
+  PolyForm Noncommercial 1.0.0 (LICENSE.md): gratis para usar y modificar sin
+  fines comerciales; no se puede vender. Créditos: TMDB, Wikiquote y Wikidata.
+  Proyecto no oficial, sin relación con Netflix.
 
 Tus datos (marcador, catálogo instalado y sesión de Netflix) se guardan en la
 carpeta «data». Si actualizas el juego, conserva «data» y «pc-app\\config.toml».
