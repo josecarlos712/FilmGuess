@@ -4,6 +4,31 @@ Juego de salón: desde el móvil se elige una película del catálogo de Netflix
 
 > La app **no descarga, graba ni captura** vídeo ni fotogramas. Solo controla la reproducción normal de Netflix con tu cuenta.
 
+**[⬇️ Descargar la última versión](https://github.com/josecarlos712/FilmGuess/releases/latest)**: un .zip para Windows con todo incluido, sin instalar Python.
+
+## Capturas
+
+<p align="center">
+  <img src="docs/capturas/tv-revelar.jpg" alt="Tele al revelar: póster, título, todas las pistas y el marcador de la ronda" width="100%">
+</p>
+<p align="center"><em>Al revelar, la tele enseña el póster, el título, todas las pistas (también las que nadie abrió) y cómo queda el marcador.</em></p>
+
+| La tele en espera | Pistas durante la ronda | Alguien se arriesga y falla |
+|---|---|---|
+| ![Tele en espera con el código QR y el marcador](docs/capturas/tv-espera.jpg) | ![Pistas en una esquina, sin tapar la escena](docs/capturas/tv-pistas.jpg) | ![Aviso de fallo arriba a la derecha](docs/capturas/tv-aviso.jpg) |
+| Se escanea el QR con el móvil y se ve el marcador. | Las pistas abiertas van en una esquina y la escena queda libre. | Aciertos y fallos salen como avisos pequeños. |
+
+| Elegir la película | Elegir el momento | Dar pistas | Repartir puntos |
+|---|---|---|---|
+| ![Buscador con pósters en el móvil](docs/capturas/movil-buscar.jpg) | ![Rueda para elegir el segundo exacto](docs/capturas/movil-momento.jpg) | ![Ronda en el móvil con las pistas y los botones](docs/capturas/movil-ronda.jpg) | ![Acertantes marcados y confeti](docs/capturas/movil-acierto.jpg) |
+
+<p align="center">
+  <img src="docs/capturas/tv-preparando.jpg" alt="Pantalla de carga «Preparando fotograma…»" width="70%">
+</p>
+<p align="center"><em>Mientras Netflix busca el segundo elegido, la tele enseña una sala de proyección en lugar de la carga de Netflix.</em></p>
+
+> En las capturas, la «escena» es el póster desenfocado: el juego se fotografió con una tele de prueba, sin Netflix ni fotogramas reales.
+
 ## Cómo se juega
 
 1. En el PC: `arrancar.bat`. Se abre Edge a pantalla completa con la pantalla de espera (logo, QR y marcador). Transmítela a la tele.
@@ -177,3 +202,30 @@ FilmGuess/
 ├── data/          Catálogo SQLite, movies.csv, perfil del navegador y marcador (no se versiona)
 └── docs/          Documentación
 ```
+
+## Licencia
+
+Adivina la Peli se distribuye con la licencia **[PolyForm Noncommercial 1.0.0](LICENSE.md)**:
+
+- ✅ Puedes descargarlo, usarlo y jugar gratis.
+- ✅ Puedes estudiar el código, modificarlo y compartir tus cambios, siempre que no sea con fines comerciales.
+- ❌ No puedes venderlo, ni venderlo modificado, ni usarlo en un producto o servicio de pago.
+- ⚠️ Quien lo comparta, modificado o no, tiene que incluir la licencia y el aviso de autoría del fichero [NOTICE](NOTICE).
+
+Para un uso comercial hace falta un permiso aparte del autor.
+
+## Créditos y atribuciones
+
+- **TMDB:** este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica. Los títulos en español, los pósters, las duraciones, las sinopsis, los eslóganes y las críticas del catálogo vienen de [The Movie Database (TMDB)](https://www.themoviedb.org/). Los pósters se cargan directamente desde los servidores de TMDB.
+- **Wikiquote:** las frases de películas marcadas como de Wikiquote vienen de [Wikiquote](https://es.wikiquote.org/), con licencia [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.es). Cada frase pertenece a la página de Wikiquote de su película y a sus autores; el juego solo tapa las palabras del título.
+- **Wikidata:** los enlaces entre identificadores (Netflix, TMDB e IMDb) vienen de [Wikidata](https://www.wikidata.org/), con licencia [CC0](https://creativecommons.org/publicdomain/zero/1.0/deed.es).
+- **IMDb:** las notas de IMDb solo se usan si cada persona descarga los [conjuntos de datos de IMDb](https://developer.imdb.com/non-commercial-datasets/) en su propio PC, para uso personal y no comercial. El catálogo incluido en el repositorio y en el paquete **no lleva datos de IMDb**.
+- **Fuentes:** Sora, Figtree y Martian Mono, de [Google Fonts](https://fonts.google.com/), con licencia [SIL Open Font License](https://openfontlicense.org/).
+
+Los títulos, pósters y frases de las películas son propiedad de sus respectivos dueños y se muestran solo como parte del juego.
+
+## Aviso
+
+Adivina la Peli es un proyecto **no oficial** y sin ánimo de lucro. **No tiene ninguna relación con Netflix**, ni está patrocinado ni respaldado por Netflix. «Netflix» es una marca registrada de Netflix, Inc.
+
+El juego no descarga ni copia vídeo: controla el reproductor de Netflix en el navegador de cada persona, con su propia cuenta y su propia suscripción. Cada jugador es responsable de usarlo de acuerdo con las [condiciones de uso de Netflix](https://help.netflix.com/legal/termsofuse).
