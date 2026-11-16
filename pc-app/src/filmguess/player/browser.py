@@ -84,6 +84,9 @@ class Browser:
                 bypass_csp=True,
                 args=self.launch_args(),
                 ignore_default_args=IGNORED_DEFAULT_ARGS,
+                # Con el sandbox de Chrome activo Playwright no pasa --no-sandbox, y
+                # desaparece la barra «marca de línea de comandos no admitida».
+                chromium_sandbox=True,
             )
             if self.init_js:
                 await self._context.add_init_script(self.init_js)
