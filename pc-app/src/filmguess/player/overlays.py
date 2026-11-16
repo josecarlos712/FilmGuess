@@ -193,12 +193,16 @@ OVERLAY_CSS = """
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
 #fg-reveal .fg-reveal-inner:has(.fg-reveal-extra) { max-width: calc(var(--u) * 116); }
-#fg-reveal .fg-reveal-inner:has(.fg-reveal-extra) h1 { font-size: calc(var(--u) * 5.2); }
+#fg-reveal .fg-reveal-inner:has(.fg-reveal-extra) { align-items: start; }
+#fg-reveal .fg-reveal-inner:has(.fg-reveal-extra) h1 { font-size: calc(var(--u) * 4.8); }
+#fg-reveal .fg-reveal-inner:has(.fg-reveal-extra) .fg-original {
+  margin-top: calc(var(--u) * 0.8); font-size: calc(var(--u) * 2);
+}
 #fg-reveal .fg-reveal-inner:has(.fg-reveal-extra) .fg-year { margin-top: calc(var(--u) * 1.4); }
 #fg-reveal .fg-reveal-extra {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--u) * 26), 1fr));
+  display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
   align-items: start; gap: calc(var(--u) * 4);
-  margin-top: calc(var(--u) * 3); padding-top: calc(var(--u) * 2);
+  margin-top: calc(var(--u) * 2.2); padding-top: calc(var(--u) * 1.8);
   border-top: 1px solid rgb(255 255 255 / 0.12);
 }
 #fg-reveal .fg-all-hints { animation: fg-rise 700ms var(--fg-out) 760ms both; }
@@ -207,26 +211,28 @@ OVERLAY_CSS = """
   margin: 0 0 calc(var(--u) * 1); font-size: calc(var(--u) * 1.7); color: var(--p-muted);
   text-transform: uppercase; letter-spacing: 0.12em;
 }
-#fg-reveal .fg-all-hints dl {
-  display: grid; grid-template-columns: auto minmax(0, 1fr);
-  column-gap: calc(var(--u) * 1.4); row-gap: calc(var(--u) * 0.7); margin: 0;
-}
+/* Cada pista en dos líneas: la etiqueta encima y la respuesta a todo el ancho. */
+#fg-reveal .fg-all-hints dl { display: grid; margin: 0; }
 #fg-reveal .fg-all-hints dt {
-  font-size: calc(var(--u) * 1.7); line-height: 1.35; color: var(--p-muted);
+  margin-top: calc(var(--u) * 1.1); font-size: calc(var(--u) * 1.4); line-height: 1.3;
+  color: var(--p-muted);
   animation: fg-in 520ms var(--fg-out) calc(900ms + var(--i, 0) * 90ms) both;
 }
 #fg-reveal .fg-all-hints dd {
-  margin: 0; font-size: calc(var(--u) * 1.9); line-height: 1.3; text-wrap: pretty;
+  margin: calc(var(--u) * 0.15) 0 0; font-size: calc(var(--u) * 1.85); line-height: 1.25;
+  text-wrap: pretty;
   animation: fg-in 520ms var(--fg-out) calc(900ms + var(--i, 0) * 90ms) both;
 }
 #fg-reveal .fg-all-hints dd.fg-long {
   font-style: italic; font-size: calc(var(--u) * 1.7);
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
 }
 #fg-reveal .fg-all-hints dd.fg-unseen { color: var(--p-accent); }
+#fg-reveal .fg-all-hints dt:first-of-type { margin-top: 0; }
 #fg-reveal .fg-unseen-tag {
-  display: block; font-size: 0.8em; color: var(--p-accent); opacity: 0.8;
-  text-transform: lowercase;
+  margin-left: 0.8em; padding: 0.05em 0.6em; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--p-accent) 45%, transparent);
+  font-size: 0.85em; color: var(--p-accent);
 }
 #fg-scores { animation: fg-rise 700ms var(--fg-out) 800ms both; }
 #fg-scores.fg-floating { animation: fg-rise 700ms var(--fg-out) both; }
