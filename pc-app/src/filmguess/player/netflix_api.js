@@ -427,10 +427,16 @@
   function fitReveal() {
     const reveal = document.getElementById("fg-reveal");
     const extra = reveal && reveal.querySelector(".fg-reveal-extra");
-    if (!extra) return;
+    const inner = reveal && reveal.querySelector(".fg-reveal-inner");
+    if (!extra || !inner) return;
+    // Se mide solo el contenido: el resplandor decorativo de detrás del póster
+    // sobresale de la capa y haría creer que no cabe.
+    const style = getComputedStyle(reveal);
+    const room =
+      reveal.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
     let scale = 1;
     extra.style.setProperty("--hs", "1");
-    while (reveal.scrollHeight > reveal.clientHeight + 1 && scale > 0.55) {
+    while (inner.offsetHeight > room + 1 && scale > 0.55) {
       scale -= 0.05;
       extra.style.setProperty("--hs", scale.toFixed(2));
     }

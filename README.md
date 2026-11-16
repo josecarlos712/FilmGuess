@@ -4,6 +4,31 @@ Juego de salón: desde el móvil se elige una película del catálogo de Netflix
 
 > La app **no descarga, graba ni captura** vídeo ni fotogramas. Solo controla la reproducción normal de Netflix con tu cuenta.
 
+**[⬇️ Descargar la última versión](https://github.com/josecarlos712/FilmGuess/releases/latest)**: un .zip para Windows con todo incluido, sin instalar Python.
+
+## Capturas
+
+<p align="center">
+  <img src="docs/capturas/tv-revelar.jpg" alt="Tele al revelar: póster, título, todas las pistas y el marcador de la ronda" width="100%">
+</p>
+<p align="center"><em>Al revelar, la tele enseña el póster, el título, todas las pistas (también las que nadie abrió) y cómo queda el marcador.</em></p>
+
+| La tele en espera | Pistas durante la ronda | Alguien se arriesga y falla |
+|---|---|---|
+| ![Tele en espera con el código QR y el marcador](docs/capturas/tv-espera.jpg) | ![Pistas en una esquina, sin tapar la escena](docs/capturas/tv-pistas.jpg) | ![Aviso de fallo arriba a la derecha](docs/capturas/tv-aviso.jpg) |
+| Se escanea el QR con el móvil y se ve el marcador. | Las pistas abiertas van en una esquina y la escena queda libre. | Aciertos y fallos salen como avisos pequeños. |
+
+| Elegir la película | Elegir el momento | Dar pistas | Repartir puntos |
+|---|---|---|---|
+| ![Buscador con pósters en el móvil](docs/capturas/movil-buscar.jpg) | ![Rueda para elegir el segundo exacto](docs/capturas/movil-momento.jpg) | ![Ronda en el móvil con las pistas y los botones](docs/capturas/movil-ronda.jpg) | ![Acertantes marcados y confeti](docs/capturas/movil-acierto.jpg) |
+
+<p align="center">
+  <img src="docs/capturas/tv-preparando.jpg" alt="Pantalla de carga «Preparando fotograma…»" width="70%">
+</p>
+<p align="center"><em>Mientras Netflix busca el segundo elegido, la tele enseña una sala de proyección en lugar de la carga de Netflix.</em></p>
+
+> En las capturas, la «escena» es el póster desenfocado: el juego se fotografió con una tele de prueba (`scripts/capturas_readme.py`), sin Netflix ni fotogramas reales.
+
 ## Cómo se juega
 
 1. En el PC: `arrancar.bat`. Se abre Edge a pantalla completa con la pantalla de espera (logo, QR y marcador). Transmítela a la tele.
