@@ -84,3 +84,14 @@ Un pack es una lista propia de películas para el modo al azar, pensada para jug
 
 - **Añadir por enlace**: se pega `https://www.netflix.com/title/80100172`; se extrae el ID, se lee el nombre de la ficha pública de Netflix y se pasa por los pasos 2 a 6.
 - **Corregir**: en las fichas de confianza baja, el panel muestra los candidatos de TMDB con su póster para elegir el correcto o buscar otro. Se marca `manual = 1`.
+
+## Excluir películas del azar
+
+Para que "película al azar" nunca saque cierto cine (p. ej. indio o chino) sin borrar nada del catálogo:
+
+1. `arrancar.bat origen` descarga de TMDB el idioma original y los países de origen de cada película (`--todas` para repetirlo con las ya descargadas, `--limite N` para probar).
+2. En `config.toml`, sección `[random]`, se listan los códigos a excluir:
+   - `exclude_languages = ["hi", "ta", "zh", ...]` (idioma original, ISO 639-1);
+   - `exclude_countries = ["IN", "CN", "HK", "TW"]` (países de origen, ISO 3166-1; basta con que coincida uno).
+
+Las películas de origen desconocido (sin ejecutar `origen`) no se excluyen. Los packs personalizados no se filtran: los elige el usuario a mano.

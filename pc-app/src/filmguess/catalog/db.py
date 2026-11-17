@@ -137,6 +137,10 @@ class CatalogDB:
         if "wd_tmdb_id" not in columns:
             with self._conn:
                 self._conn.execute("ALTER TABLE movies ADD COLUMN wd_tmdb_id INTEGER")
+        for name in ("original_language", "origin_country", "origin_fetched_at"):
+            if name not in columns:
+                with self._conn:
+                    self._conn.execute(f"ALTER TABLE movies ADD COLUMN {name} TEXT")
 
     # --- Alta desde el CSV -------------------------------------------------
 
@@ -417,12 +421,22 @@ class CatalogDB:
         ).fetchall()
         return [_row_to_movie(r) for r in rows], total
 
-    def random_candidates(self, *, min_year: int, genre_id: int | None = None) -> list[Movie]:
+    def random_candidates(
+        self,
+        *,
+        min_year: int,
+        genre_id: int | None = None,
+        exclude_languages: Sequence[str] = (),
+        exclude_countries: Sequence[str] = (),
+    ) -> list[Movie]:
         """Películas aptas para el modo aleatorio (sin ordenar ni recortar).
 
         Args:
             min_year: Año mínimo de estreno.
             genre_id: Solo películas de este género de TMDB.
+            exclude_languages: Idiomas originales excluidos (los de origen desconocido se
+                conservan).
+            exclude_countries: Países de origen excluidos (basta con que coincida uno).
 
         Returns:
             Películas disponibles en ES, con confianza alta o media y año >= ``min_year``.
@@ -435,6 +449,20 @@ class CatalogDB:
         if genre_id is not None:
             sql += f" AND {GENRE_FILTER}"
             params.append(genre_id)
+        langs = [x.strip().lower() for x in exclude_languages if x.strip()]
+        if langs:
+            sql += (
+                " AND (m.original_language IS NULL "
+                "OR lower(m.original_language) NOT IN (SELECT value FROM json_each(?)))"
+            )
+            params.append(json.dumps(langs))
+        countries = [x.strip().upper() for x in exclude_countries if x.strip()]
+        if countries:
+            sql += (
+                " AND (m.origin_country IS NULL OR NOT EXISTS (SELECT 1 FROM json_each(?) c "
+                "WHERE instr(',' || upper(m.origin_country) || ',', ',' || c.value || ',') > 0))"
+            )
+            params.append(json.dumps(countries))
         rows = self._conn.execute(sql, params).fetchall()
         return [_row_to_movie(r) for r in rows]
 
@@ -504,6 +532,39 @@ class CatalogDB:
             f"FROM movies m WHERE {where} ORDER BY COALESCE(m.imdb_votes, 0) DESC"
         ).fetchall()
         return [ClueTarget(int(r[0]), int(r[1]), (r[2], r[3], r[4])) for r in rows]
+
+    def origin_targets(self, *, refresh: bool = False) -> list[ClueTarget]:
+        """Películas del catálogo de juego a las que falta el origen (idioma y país).
+
+        Args:
+            refresh: Incluye también las que ya tienen el origen.
+
+        Returns:
+            Las películas, de la más votada a la menos.
+        """
+        where = "m.netflix_es = 1 AND m.tmdb_id IS NOT NULL"
+        if not refresh:
+            where += " AND m.origin_fetched_at IS NULL"
+        rows = self._conn.execute(
+            "SELECT m.netflix_id, m.tmdb_id, m.title_es, m.original_title, m.csv_title "
+            f"FROM movies m WHERE {where} ORDER BY COALESCE(m.imdb_votes, 0) DESC"
+        ).fetchall()
+        return [ClueTarget(int(r[0]), int(r[1]), (r[2], r[3], r[4])) for r in rows]
+
+    def save_origin(self, netflix_id: int, language: str | None, countries: list[str]) -> None:
+        """Guarda el idioma original y los países de origen de una película.
+
+        Args:
+            netflix_id: ID de Netflix.
+            language: Código ISO 639-1 del idioma original, si se conoce.
+            countries: Códigos ISO 3166-1 de los países de origen.
+        """
+        with self._conn:
+            self._conn.execute(
+                "UPDATE movies SET original_language = ?, origin_country = ?, "
+                "origin_fetched_at = datetime('now') WHERE netflix_id = ?",
+                (language or None, ",".join(countries) or None, netflix_id),
+            )
 
     def save_clues(self, netflix_id: int, clues: Clues) -> None:
         """Guarda (o sustituye) las pistas de una película.
