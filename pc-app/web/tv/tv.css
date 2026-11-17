@@ -122,6 +122,15 @@ body {
   font-size: calc(var(--u) * 1.7);
   color: var(--p-ink);
 }
+.packs-link {
+  justify-self: start;
+  align-self: flex-start;
+  min-height: calc(var(--u) * 4.2);
+  margin-top: calc(var(--u) * 1.2);
+  padding: 0 calc(var(--u) * 1.8);
+  font-size: calc(var(--u) * 1.5);
+  text-decoration: none;
+}
 
 .board {
   display: flex;

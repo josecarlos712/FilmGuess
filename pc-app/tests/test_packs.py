@@ -315,6 +315,9 @@ def test_game_serves_the_editor_on_the_pc_only(
     # El pack recién guardado ya se puede jugar, sin reiniciar nada.
     assert pc.get("/random?pack=desde-el-pc", headers=HEADERS).json()["netflixId"] == 2
     assert pc.get("/editor-packs/api/peliculas").json()["total"] == 5
+    # La pantalla de espera enlaza al editor en otra pestaña (esa la maneja el juego).
+    tv = pc.get("/tv").text
+    assert 'href="/editor-packs/" target="_blank"' in tv
     # Desde el móvil (otra máquina de la red) no se abre ni se cambia nada.
     phone = TestClient(app, client=LAN)
     assert phone.get("/editor-packs/").status_code == 403

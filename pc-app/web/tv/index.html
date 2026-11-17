@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="/static/tv/tv.css" />
   </head>
   <body>
-    <!-- Pantalla de la tele: se transmite tal cual. Sin navegación ni controles. -->
+    <!-- Pantalla de la tele: se transmite tal cual. El único control es el acceso a los packs. -->
     <main class="tv">
       <div class="ambient" aria-hidden="true">
         <div class="ambient-glow"></div>
@@ -41,6 +41,8 @@
               <p class="join-title" data-text="unirse"></p>
               <p class="join-hint muted" data-text="unirseAyuda"></p>
               <p id="direccion" class="join-addr num"></p>
+              <!-- Se abre en otra pestaña: esta la maneja el juego para mostrar Netflix. -->
+              <a class="btn secondary packs-link" href="/editor-packs/" target="_blank" rel="noopener" data-text="editarPacks"></a>
             </div>
           </div>
         </div>

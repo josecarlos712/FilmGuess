@@ -4,6 +4,7 @@ export const TEXTOS = {
   logo2: "la peli",
   unirse: "Únete con el móvil",
   unirseAyuda: "Escanea el código con la cámara: desde el móvil se elige la película y el fotograma.",
+  editarPacks: "Editar packs de películas",
   marcador: "Marcador",
   sinJugadores: "Aún no hay jugadores. Añádelos desde el móvil.",
   puntos: (n) => (n === 1 ? "punto" : "puntos"),
