@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -150,7 +151,7 @@ class GameSession:
         self._lock = asyncio.Lock()
         self._clip: asyncio.Task[None] | None = None
         self._index: TitleIndex | None = None
-        self._index_task: asyncio.Task[TitleIndex] | None = None
+        self._index_lock = threading.Lock()
         self._manual: dict[int, list[str]] | None = None
 
     # --- Consultas ---------------------------------------------------------------
@@ -837,16 +838,21 @@ class GameSession:
             index.add(movie_id, titles)
         return index
 
+    def _ensure_index(self) -> TitleIndex:
+        with self._index_lock:
+            if self._index is None:
+                self._index = self._build_index()
+            return self._index
+
     def _start_index(self) -> None:
-        if self._index is None and self._index_task is None:
-            self._index_task = asyncio.create_task(asyncio.to_thread(self._build_index))
+        """Prepara el índice en un hilo aparte (no depende del bucle de eventos)."""
+        if self._index is None:
+            threading.Thread(target=self._ensure_index, daemon=True).start()
 
     async def _title_index(self) -> TitleIndex:
-        if self._index is None:
-            self._start_index()
-            assert self._index_task is not None
-            self._index = await self._index_task
-        return self._index
+        if self._index is not None:
+            return self._index
+        return await asyncio.to_thread(self._ensure_index)
 
     def _require_round(self) -> Round:
         if self.round is None:

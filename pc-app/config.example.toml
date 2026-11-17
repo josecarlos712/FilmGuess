@@ -33,3 +33,7 @@ min_year = 1991           # Solo películas estrenadas después de 1990.
 min_votes = 25000         # Votos mínimos en IMDb para considerarla "conocida".
 pool_size = 500           # Tamaño del grupo de las mejor valoradas.
 no_repeat = 50            # No repetir las últimas N rondas.
+# Películas que nunca salen en "película al azar" (necesita `arrancar.bat origen`).
+# Las de origen desconocido sí pueden salir.
+# exclude_languages = ["hi", "ta", "te", "ml", "kn", "bn", "mr", "pa", "gu", "zh", "cn", "yue"]
+# exclude_countries = ["IN", "CN", "HK", "TW"]

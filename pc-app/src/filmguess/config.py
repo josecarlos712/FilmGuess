@@ -61,6 +61,8 @@ class RandomConfig(BaseModel):
     min_votes: int = Field(default=25000, ge=0)
     pool_size: int = Field(default=500, ge=1)
     no_repeat: int = Field(default=50, ge=0)
+    exclude_languages: list[str] = []
+    exclude_countries: list[str] = []
 
 
 class AppConfig(BaseModel):

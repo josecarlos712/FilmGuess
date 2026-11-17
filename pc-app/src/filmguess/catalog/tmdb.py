@@ -269,6 +269,21 @@ class TmdbClient:
             {"language": self.language, "append_to_response": "external_ids,watch/providers"},
         )
 
+    async def movie_origin(self, tmdb_id: int) -> dict[str, Any]:
+        """Ficha de una película (para su idioma original y países de origen).
+
+        Args:
+            tmdb_id: ID de TMDB.
+
+        Returns:
+            JSON de ``/movie/{id}``.
+
+        Raises:
+            TmdbNotFoundError: Si TMDB no tiene esa película.
+            TmdbError: Si la petición falla.
+        """
+        return await self._get(f"/movie/{tmdb_id}", {"language": self.language})
+
     async def movie_clues(self, tmdb_id: int) -> dict[str, Any]:
         """Ficha de una película con su reparto (para las pistas).
 

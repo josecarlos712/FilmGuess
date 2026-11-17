@@ -92,7 +92,13 @@ def pick_random(
     """
     rng = rng or random.Random()
     ranked = rank_candidates(
-        db.random_candidates(min_year=config.min_year, genre_id=genre_id), config.min_votes
+        db.random_candidates(
+            min_year=config.min_year,
+            genre_id=genre_id,
+            exclude_languages=config.exclude_languages,
+            exclude_countries=config.exclude_countries,
+        ),
+        config.min_votes,
     )
     pool = [r.movie for r in ranked[: config.pool_size]]
     if not pool:

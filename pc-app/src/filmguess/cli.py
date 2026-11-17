@@ -84,6 +84,14 @@ def build_parser() -> argparse.ArgumentParser:
     alias.add_argument(
         "--todas", action="store_true", help="vuelve a descargar también las que ya los tienen"
     )
+    origin = sub.add_parser(
+        "origen",
+        help="descarga el idioma y país de origen (para excluir películas del azar)",
+    )
+    origin.add_argument("--limite", type=int, default=None, help="máximo de películas")
+    origin.add_argument(
+        "--todas", action="store_true", help="vuelve a descargar también las que ya tienen origen"
+    )
     plat = sub.add_parser(
         "plataformas",
         help="descarga aparte el catálogo de todas las plataformas del país (TMDB y Wikidata)",
@@ -178,6 +186,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if command == "importar":
         return _cmd_import(config, args)
+    if command == "origen":
+        return _cmd_origin(config, args)
     if command == "pistas":
         return _cmd_clues(config, args)
     if command == "alias":
@@ -335,6 +345,23 @@ def _cmd_aliases(config: AppConfig, args: argparse.Namespace) -> int:
         f"Títulos alternativos: {summary.done - summary.errors} películas · "
         f"{summary.titles} títulos · errores {summary.errors}"
     )
+    return 0
+
+
+def _cmd_origin(config: AppConfig, args: argparse.Namespace) -> int:
+    from filmguess.catalog.origin import OriginProgress
+    from filmguess.catalog.service import run_origin
+
+    def progress(p: OriginProgress) -> None:
+        if p.done % 200 == 0 or p.done == p.total:
+            print(f"  {p.done}/{p.total} · errores {p.errors}", flush=True)
+
+    try:
+        summary = run_origin(config, refresh=args.todas, limit=args.limite, on_progress=progress)
+    except TmdbError as exc:
+        print(f"Error al descargar el origen: {exc}")
+        return 1
+    print(f"Origen: {summary.done - summary.errors} películas · errores {summary.errors}")
     return 0
 
 
