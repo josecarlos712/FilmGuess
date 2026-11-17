@@ -76,6 +76,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="solo aplica data/traducciones.json al catálogo",
     )
+    alias = sub.add_parser(
+        "alias",
+        help="descarga de TMDB los títulos alternativos (para comprobar respuestas escritas)",
+    )
+    alias.add_argument("--limite", type=int, default=None, help="máximo de películas")
+    alias.add_argument(
+        "--todas", action="store_true", help="vuelve a descargar también las que ya los tienen"
+    )
     plat = sub.add_parser(
         "plataformas",
         help="descarga aparte el catálogo de todas las plataformas del país (TMDB y Wikidata)",
@@ -172,6 +180,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _cmd_import(config, args)
     if command == "pistas":
         return _cmd_clues(config, args)
+    if command == "alias":
+        return _cmd_aliases(config, args)
     if command == "plataformas":
         return _cmd_platforms(config, args)
     if command == "exportar-plataformas":
@@ -303,6 +313,27 @@ def _cmd_clues(config: AppConfig, args: argparse.Namespace) -> int:
         f"{summary.quotes} · críticas {summary.reviews} · eslóganes {summary.taglines} · "
         f"sinopsis {summary.synopses} · director {summary.directors} · "
         f"errores {summary.errors}"
+    )
+    return 0
+
+
+def _cmd_aliases(config: AppConfig, args: argparse.Namespace) -> int:
+    from filmguess.catalog.aliases import AliasProgress
+    from filmguess.catalog.service import run_aliases
+    from filmguess.catalog.tmdb import TmdbError as AliasTmdbError
+
+    def progress(p: AliasProgress) -> None:
+        if p.done % 200 == 0 or p.done == p.total:
+            print(f"  {p.done}/{p.total} · títulos {p.titles} · errores {p.errors}", flush=True)
+
+    try:
+        summary = run_aliases(config, refresh=args.todas, limit=args.limite, on_progress=progress)
+    except AliasTmdbError as exc:
+        print(f"Error al descargar los títulos alternativos: {exc}")
+        return 1
+    print(
+        f"Títulos alternativos: {summary.done - summary.errors} películas · "
+        f"{summary.titles} títulos · errores {summary.errors}"
     )
     return 0
 

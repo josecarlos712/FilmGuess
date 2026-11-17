@@ -15,7 +15,7 @@ from filmguess.catalog.search import SearchPage
 from filmguess.catalog.tmdb import poster_url
 from filmguess.game.hints import MAX_FRAMES
 from filmguess.game.scoreboard import Player
-from filmguess.game.session import SessionState
+from filmguess.game.session import GuessResult, SessionState
 from filmguess.packs.store import Pack
 
 
@@ -32,6 +32,13 @@ class AwardRequest(BaseModel):
     """Cuerpo de ``POST /award`` (quienes han acertado) y ``POST /fail`` (quienes fallan)."""
 
     jugadores: list[str] = Field(min_length=1, max_length=20)
+
+
+class GuessRequest(BaseModel):
+    """Cuerpo de ``POST /guess``: un jugador escribe el título en su móvil."""
+
+    jugador: str = Field(min_length=1, max_length=64)
+    texto: str = Field(min_length=1, max_length=120)
 
 
 class NewPlayerRequest(BaseModel):
@@ -226,3 +233,18 @@ def status(state: SessionState) -> dict[str, Any]:
         "ultimaOrden": state.last_command,
         "ultimoError": state.last_error,
     }
+
+
+def guess(result: GuessResult) -> dict[str, Any]:
+    """Respuesta de ``POST /guess``.
+
+    Args:
+        result: Resultado de la comprobación.
+
+    Returns:
+        ``{ok, resultado, puntos}`` y, si acierta, ``titulo`` y ``anio``.
+    """
+    body: dict[str, Any] = {"ok": True, "resultado": result.verdict, "puntos": result.points}
+    if result.movie is not None:
+        body |= {"titulo": result.movie.display_title, "anio": result.movie.year}
+    return body

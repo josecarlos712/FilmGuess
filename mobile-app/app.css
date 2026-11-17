@@ -1065,3 +1065,18 @@ img.poster.loaded {
     display: none;
   }
 }
+
+/* Invitación para jugar desde cada móvil */
+.invite-qr {
+  background: var(--p-qr-bg, #fff);
+  border-radius: var(--radius-m);
+  padding: 12px;
+  width: min(100%, 260px);
+  margin-inline: auto;
+}
+
+.invite-qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}

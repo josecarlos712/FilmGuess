@@ -72,6 +72,17 @@ CREATE TABLE IF NOT EXISTS clues (
     fetched_at   TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS aliases (
+    netflix_id INTEGER NOT NULL,
+    title      TEXT NOT NULL,
+    PRIMARY KEY (netflix_id, title)
+);
+
+CREATE TABLE IF NOT EXISTS aliases_fetched (
+    netflix_id INTEGER PRIMARY KEY,
+    fetched_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS random_history (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     netflix_id INTEGER NOT NULL,
@@ -633,6 +644,71 @@ class CatalogDB:
                 "INSERT INTO random_history(netflix_id, picked_at) VALUES (?, ?)",
                 (netflix_id, _now()),
             )
+
+    # --- Títulos alternativos ----------------------------------------------
+
+    def alias_targets(self, *, refresh: bool = False) -> list[ClueTarget]:
+        """Películas del catálogo de juego sin títulos alternativos descargados.
+
+        Args:
+            refresh: Incluye también las que ya los tienen.
+
+        Returns:
+            Las películas, de la más votada a la menos.
+        """
+        targets = self.clue_targets(refresh=True)
+        if refresh:
+            return targets
+        done = {int(r[0]) for r in self._conn.execute("SELECT netflix_id FROM aliases_fetched")}
+        return [t for t in targets if t.netflix_id not in done]
+
+    def save_aliases(self, netflix_id: int, titles: Iterable[str]) -> None:
+        """Guarda (sustituye) los títulos alternativos de una película.
+
+        Args:
+            netflix_id: ID de Netflix.
+            titles: Títulos alternativos.
+        """
+        with self._conn:
+            self._conn.execute("DELETE FROM aliases WHERE netflix_id = ?", (netflix_id,))
+            self._conn.executemany(
+                "INSERT OR IGNORE INTO aliases (netflix_id, title) VALUES (?, ?)",
+                [(netflix_id, t) for t in titles],
+            )
+            self._conn.execute(
+                "INSERT OR REPLACE INTO aliases_fetched (netflix_id, fetched_at) VALUES (?, ?)",
+                (netflix_id, _now()),
+            )
+
+    def aliases(self, netflix_id: int) -> list[str]:
+        """Títulos alternativos de una película.
+
+        Args:
+            netflix_id: ID de Netflix.
+
+        Returns:
+            Los títulos guardados (puede estar vacío).
+        """
+        rows = self._conn.execute(
+            "SELECT title FROM aliases WHERE netflix_id = ? ORDER BY title", (netflix_id,)
+        ).fetchall()
+        return [str(r[0]) for r in rows]
+
+    def all_titles(self) -> list[tuple[int, list[str]]]:
+        """Todos los títulos de todas las películas (para saber si una respuesta es otra).
+
+        Returns:
+            Pares ``(id de Netflix, títulos)`` con el español, el original, el del CSV y
+            los alternativos.
+        """
+        titles: dict[int, list[str]] = {}
+        for row in self._conn.execute(
+            "SELECT netflix_id, title_es, original_title, csv_title FROM movies"
+        ):
+            titles[int(row[0])] = [str(t) for t in row[1:] if t]
+        for row in self._conn.execute("SELECT netflix_id, title FROM aliases"):
+            titles.setdefault(int(row[0]), []).append(str(row[1]))
+        return list(titles.items())
 
 
 def _now() -> str:

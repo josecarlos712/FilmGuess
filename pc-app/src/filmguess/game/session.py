@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Literal, TypeVar
 
+from filmguess.catalog.aliases import AliasError, load_manual_aliases
 from filmguess.catalog.clues import Genre
 from filmguess.catalog.db import CatalogDB
 from filmguess.catalog.models import Movie
@@ -16,6 +17,7 @@ from filmguess.catalog.random_pick import pick_from_pack, pick_random
 from filmguess.catalog.search import SearchPage, search_movies
 from filmguess.catalog.tmdb import poster_url
 from filmguess.config import RandomConfig
+from filmguess.game.answers import TitleIndex, Verdict, check_answer
 from filmguess.game.hints import (
     CLIP_SECONDS,
     MAX_FRAMES,
@@ -83,6 +85,17 @@ class Round:
         return self.hints[: self.revealed]
 
 
+@dataclass(frozen=True, slots=True)
+class GuessResult:
+    """Lo que se responde al jugador que escribe un título en su móvil."""
+
+    verdict: Verdict
+    points: int
+    """Puntos ganados (acierto) o perdidos (fallo); 0 si se queda cerca."""
+    movie: Movie | None = None
+    """La película, solo si ha acertado."""
+
+
 @dataclass(slots=True)
 class SessionState:
     """Foto del estado de la partida."""
@@ -136,6 +149,9 @@ class GameSession:
         self.last_error: dict[str, str] | None = None
         self._lock = asyncio.Lock()
         self._clip: asyncio.Task[None] | None = None
+        self._index: TitleIndex | None = None
+        self._index_task: asyncio.Task[TitleIndex] | None = None
+        self._manual: dict[int, list[str]] | None = None
 
     # --- Consultas ---------------------------------------------------------------
 
@@ -290,6 +306,7 @@ class GameSession:
         hints = build_hints(movie, clues, category=category is not None)
         self.round = Round(movie, seconds, actual, category, hints, frames=[actual])
         self.screen = "pelicula"
+        self._start_index()  # para que la primera respuesta escrita no espere
         await self._paint_hints()
         await self._emit_state()
         return actual
@@ -459,6 +476,65 @@ class GameSession:
                 }
             )
         return charged
+
+    async def guess(self, player_id: str, text: str) -> GuessResult:
+        """Comprueba el título que un jugador escribe en su móvil.
+
+        Si acierta, gana lo que vale la ronda en ese momento y la ronda sigue para los
+        demás. Si falla, pierde lo mismo y queda fuera (como al arriesgarse). Si se queda
+        muy cerca («casi»), no pasa nada y puede volver a intentarlo.
+
+        Args:
+            player_id: Jugador que responde.
+            text: Lo que ha escrito.
+
+        Returns:
+            El resultado.
+
+        Raises:
+            GameError: Si no hay película en juego, ya está revelada, el jugador no existe,
+                ya la había acertado o ya había fallado en esta ronda.
+        """
+        current = self._require_guessable()
+        player = self._player(player_id)
+        self._require_can_guess(current, player_id)
+        index = await self._title_index()
+        movie = current.movie
+        titles = [
+            movie.title_es,
+            movie.original_title,
+            movie.csv_title,
+            *self.db.aliases(movie.netflix_id),
+            *self._manual_aliases().get(movie.netflix_id, []),
+        ]
+        check = check_answer(text, movie.netflix_id, titles, index)
+        log.info("Respuesta de %s: «%s» → %s", player.name, text, check.verdict)
+        # Mientras se preparaba el índice la ronda ha podido cambiar.
+        if self.round is not current:
+            raise GameError("sin_ronda", "La ronda ha terminado: espera a la siguiente.")
+        current = self._require_guessable()
+        self._require_can_guess(current, player_id)
+        if check.verdict == "fallo":
+            value = current.value
+            await self.fail([player_id])
+            return GuessResult("fallo", -value)
+        if check.verdict == "casi":
+            return GuessResult("casi", 0)
+        value = current.value
+        self._give(player_id, value)
+        current.awarded.add(player_id)
+        self._track(current, player_id, value)
+        await self._emit_scoreboard()
+        await self._emit_state()
+        await self._notify(
+            {
+                "tone": "good",
+                "delta": f"+{value}",
+                "title": f"¡{player.name} acierta!",
+                "detail": "La ronda sigue para los demás",
+            }
+        )
+        return GuessResult("acierto", value, movie)
 
     async def pause(self) -> None:
         """Pausa la película de la ronda.
@@ -725,6 +801,52 @@ class GameSession:
             await self.player.idle()
         except PlayerError as exc:
             log.warning("No se pudo volver a la pantalla de espera: %s", exc.message)
+
+    def _require_guessable(self) -> Round:
+        if self.round is None or self.screen in ("espera", "cargando"):
+            raise GameError("sin_ronda", "Todavía no hay ninguna película en la tele.")
+        if self.screen == "revelada":
+            raise GameError("ronda_cerrada", "La película ya está revelada.")
+        return self.round
+
+    def _player(self, player_id: str) -> Player:
+        player = next((p for p in self.scoreboard.players if p.id == player_id), None)
+        if player is None:
+            raise GameError("jugador_no_encontrado", "Ese jugador ya no está en el marcador.")
+        return player
+
+    @staticmethod
+    def _require_can_guess(current: Round, player_id: str) -> None:
+        if player_id in current.awarded:
+            raise GameError("ya_acertado", "Ya la has acertado: espera a que se revele.")
+        if player_id in current.failed:
+            raise GameError("fuera_de_ronda", "Has fallado esta ronda: espera a la siguiente.")
+
+    def _manual_aliases(self) -> dict[int, list[str]]:
+        if self._manual is None:
+            try:
+                self._manual = load_manual_aliases()
+            except AliasError as exc:
+                log.warning("Lista manual de alias sin cargar: %s", exc)
+                self._manual = {}
+        return self._manual
+
+    def _build_index(self) -> TitleIndex:
+        index = TitleIndex(self.db.all_titles())
+        for movie_id, titles in self._manual_aliases().items():
+            index.add(movie_id, titles)
+        return index
+
+    def _start_index(self) -> None:
+        if self._index is None and self._index_task is None:
+            self._index_task = asyncio.create_task(asyncio.to_thread(self._build_index))
+
+    async def _title_index(self) -> TitleIndex:
+        if self._index is None:
+            self._start_index()
+            assert self._index_task is not None
+            self._index = await self._index_task
+        return self._index
 
     def _require_round(self) -> Round:
         if self.round is None:

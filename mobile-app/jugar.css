@@ -1,0 +1,24 @@
+/* Página del jugador: solo lo que no está ya en app.css. */
+.grow {
+  flex: 1;
+}
+
+.result {
+  border-left: 4px solid var(--p-line);
+}
+
+.result.good {
+  border-left-color: var(--p-accent);
+}
+
+.result.bad {
+  border-left-color: var(--p-danger);
+}
+
+.result.near {
+  border-left-color: var(--p-muted);
+}
+
+.score-row.me .score-name {
+  font-weight: 700;
+}

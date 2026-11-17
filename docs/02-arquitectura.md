@@ -164,3 +164,17 @@ IMDb no tiene API de críticas y prohíbe extraerlas de su web, por eso la crít
 | `POST /award` `{jugadores: [id]}` | Reparte los puntos (409 `sin_revelar`) |
 
 `rondaActual` en `estado` añade `valor`, `categoria`, `pistas` (`tipo`, `etiqueta`, `texto`), `pistasTotal`, `fotogramas`, `fotogramasMax`, `clipUsado` y `acertantes`. La tele pinta en la esquina inferior izquierda de Netflix (`#fg-hints`) el valor, la categoría, el fotograma y las pistas reveladas; si la película ya está abierta, los otros fotogramas se buscan sin recargar la página.
+
+## Modo experimental: cada uno responde desde su móvil (rama `exp-adivinar-movil`)
+
+- En el móvil que dirige, **Jugadores → Mostrar código de invitación** enseña un QR a `/m/jugar.html#token=…` (`GET /invite` y `GET /invite.svg`, con token).
+- `mobile-app/jugar.html`: el jugador elige quién es (o se da de alta), ve el valor de la ronda y las pistas, y escribe el título.
+- `POST /guess {jugador, texto}` → `{resultado: "acierto"|"casi"|"fallo", puntos, titulo?, anio?}`:
+  - **acierto**: gana lo que vale la ronda en ese momento; la tele avisa «¡Ana acierta!» sin decir el título y la ronda sigue para los demás. Al repartir con `/award` ya no vuelve a recibir puntos.
+  - **fallo**: igual que arriesgarse (`/fail`): pierde lo que vale la ronda y queda fuera.
+  - **casi**: muy cerca del título; no penaliza y puede volver a intentarlo.
+  - Errores: `sin_ronda`, `ronda_cerrada`, `ya_acertado`, `fuera_de_ronda`, `jugador_no_encontrado`.
+- Comprobación (`game/answers.py`): sin caja, tildes ni signos («spider-man» = «Spiderman»); fonética del español (b/v, h, ll/y, c/z/s, qu/k, g/j, letras dobles, «e» delante de «s»); números en cualquier forma («II», «2», «dos», «parte 2») pero tienen que coincidir; título sin subtítulo solo si no es el de otra película; erratas según la longitud (0 hasta 3 letras, 1 hasta 6, 2 hasta 11, 3 a partir de ahí); un título exacto de otra película del catálogo siempre es fallo.
+- Títulos aceptados: español, original, el del CSV, los alternativos de TMDB (tabla `aliases`, `arrancar.bat alias`: títulos de países hispanohablantes y anglosajones y traducciones al español e inglés) y la lista manual `pc-app/catalogo/alias.json` (`{"<id de Netflix>": ["alias"]}`).
+- Cada respuesta queda en el registro (`Respuesta de Ana: «…» → acierto`) para ir afinando la lista manual.
+

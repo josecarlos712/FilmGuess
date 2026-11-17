@@ -114,6 +114,18 @@ export function createApi(token) {
     award: (jugadores) => request("POST", "/award", { jugadores }),
     fail: (jugadores) => request("POST", "/fail", { jugadores }),
     peek: () => request("GET", "/peek"),
+    guess: (jugador, texto) => request("POST", "/guess", { jugador, texto }),
+    invite: () => request("GET", "/invite"),
+    async inviteQr() {
+      let res;
+      try {
+        res = await fetch("/invite.svg", { headers: { "X-Token": token } });
+      } catch {
+        throw new ApiError("sin_red", TEXTOS.errorRed, 0);
+      }
+      if (!res.ok) throw new ApiError("error", TEXTOS.errorDesconocido, res.status);
+      return res.text();
+    },
     play: (netflixId, seconds, categoria) =>
       request("POST", "/play", { netflixId, seconds, categoria: categoria || null }),
     pause: () => request("POST", "/pause"),

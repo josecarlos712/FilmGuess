@@ -15,7 +15,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/static/system.css" />
-    <link rel="stylesheet" href="app.css?v=4" />
+    <link rel="stylesheet" href="app.css?v=5" />
   </head>
   <body>
     <header class="topbar">
@@ -152,10 +152,20 @@
         </form>
         <p id="error-jugadores" class="error hidden" role="alert"></p>
         <ul id="lista-jugadores" class="people"></ul>
+        <div class="card stack invite">
+          <p class="award-title">Jugar cada uno desde su móvil</p>
+          <p class="muted small">
+            Que cada jugador escanee este código: escribirá el título en su móvil y sabrá al
+            momento si ha acertado. La ronda sigue para los demás.
+          </p>
+          <button id="btn-invitar" type="button" class="btn secondary wide">Mostrar código de invitación</button>
+          <div id="invitacion" class="invite-qr hidden"></div>
+          <p id="invitacion-url" class="muted small num hidden"></p>
+        </div>
         <button id="btn-cero" type="button" class="btn secondary wide" data-text="ponerACero"></button>
       </section>
     </main>
 
-    <script type="module" src="app.js?v=4"></script>
+    <script type="module" src="app.js?v=5"></script>
   </body>
 </html>

@@ -28,6 +28,7 @@ from filmguess.pairing.network import (
     is_allowed_client,
     is_localhost,
     pairing_url,
+    players_url,
     qr_svg,
     token_matches,
 )
@@ -61,6 +62,8 @@ ERROR_STATUS: dict[str, int] = {
     "clip_usado": 409,
     "sin_revelar": 409,
     "ronda_cerrada": 409,
+    "ya_acertado": 409,
+    "fuera_de_ronda": 409,
     "peticion_invalida": 422,
     "nombre_invalido": 422,
     "fuera_de_duracion": 422,
@@ -358,6 +361,22 @@ def create_app(
     async def post_fail(body: schemas.AwardRequest) -> dict[str, Any]:
         await session.fail(body.jugadores)
         return schemas.scoreboard(session.scoreboard.players)
+
+    @app.post("/guess", dependencies=authed)
+    async def post_guess(body: schemas.GuessRequest) -> dict[str, Any]:
+        return schemas.guess(await session.guess(body.jugador, body.texto))
+
+    @app.get("/invite", dependencies=authed)
+    async def get_invite() -> dict[str, Any]:
+        return {"url": players_url(ip, port, panel.token)}
+
+    @app.get("/invite.svg", dependencies=authed)
+    async def get_invite_qr() -> Response:
+        return Response(
+            qr_svg(players_url(ip, port, panel.token)),
+            media_type="image/svg+xml",
+            headers={"Cache-Control": "no-store"},
+        )
 
     @app.post("/pause", dependencies=authed)
     async def post_pause() -> dict[str, Any]:

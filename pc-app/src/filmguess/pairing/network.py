@@ -86,6 +86,20 @@ def pairing_url(ip: str, port: int, token: str) -> str:
     return f"http://{ip}:{port}/m/#token={token}"
 
 
+def players_url(ip: str, port: int, token: str) -> str:
+    """URL de la página con la que cada jugador responde desde su móvil.
+
+    Args:
+        ip: IP del PC.
+        port: Puerto del servidor.
+        token: Token de emparejamiento.
+
+    Returns:
+        La URL.
+    """
+    return f"http://{ip}:{port}/m/jugar.html#token={token}"
+
+
 def qr_text(data: str) -> str:
     """QR en caracteres para la consola.
 

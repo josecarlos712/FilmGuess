@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es" data-type="software" data-radius="soft">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#111111" />
+    <meta name="description" content="Adivina la Peli: escribe el título de la película desde tu móvil." />
+    <title>Adivina la Peli · Jugar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400..700&family=Figtree:wght@400..600&family=Martian+Mono:wght@400..500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/system.css" />
+    <link rel="stylesheet" href="app.css?v=4" />
+    <link rel="stylesheet" href="jugar.css?v=1" />
+  </head>
+  <body>
+    <header class="topbar">
+      <p class="brand">Adivina la peli</p>
+      <p id="estado-conexion" class="link-state" role="status"></p>
+    </header>
+
+    <main id="main">
+      <!-- Sin código: hay que escanear la invitación -->
+      <section id="view-conexion" class="view hidden" aria-labelledby="t-conexion">
+        <h1 id="t-conexion" class="view-title">Únete a la partida</h1>
+        <p class="lead">Escanea el código de invitación que aparece en el móvil de quien dirige la partida.</p>
+        <form id="form-conexion" class="stack" novalidate>
+          <label class="field">
+            <span class="field-label">O escribe el código de conexión</span>
+            <input id="token" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" required />
+          </label>
+          <p id="error-conexion" class="error hidden" role="alert"></p>
+          <button type="submit" class="btn wide">Conectar</button>
+        </form>
+      </section>
+
+      <!-- ¿Quién eres? -->
+      <section id="view-quien" class="view hidden" aria-labelledby="t-quien">
+        <h1 id="t-quien" class="view-title">¿Quién eres?</h1>
+        <div id="quien-jugadores" class="chips wrap" role="group"></div>
+        <form id="form-nuevo" class="add-row" novalidate>
+          <label class="field grow">
+            <span class="field-label">Soy nuevo: mi nombre</span>
+            <input id="nombre" type="text" maxlength="30" autocomplete="off" enterkeyhint="done" />
+          </label>
+          <button type="submit" class="btn">Entrar</button>
+        </form>
+        <p id="error-quien" class="error hidden" role="alert"></p>
+      </section>
+
+      <!-- Juego -->
+      <section id="view-juego" class="view hidden" aria-labelledby="t-juego">
+        <div class="row-between">
+          <h1 id="t-juego" class="view-title"></h1>
+          <button id="btn-cambiar" type="button" class="link-btn">No soy yo</button>
+        </div>
+
+        <div id="espera" class="card stack">
+          <p class="round-title">Esperando película…</p>
+          <p class="muted">Cuando salga un fotograma en la tele, escribe aquí qué película es.</p>
+        </div>
+
+        <div id="jugando" class="stack hidden">
+          <div class="card stack">
+            <div class="round-head">
+              <span id="valor" class="round-value num"></span>
+              <span id="categoria" class="tag hidden"></span>
+            </div>
+            <ul id="pistas" class="hints"></ul>
+          </div>
+
+          <form id="form-respuesta" class="stack" novalidate>
+            <label class="field">
+              <span class="field-label">¿Qué película es?</span>
+              <input
+                id="respuesta"
+                type="text"
+                maxlength="120"
+                autocomplete="off"
+                autocorrect="off"
+                spellcheck="false"
+                enterkeyhint="send"
+              />
+            </label>
+            <button id="btn-comprobar" type="submit" class="btn wide big">Comprobar</button>
+            <p class="muted small">
+              No hace falta escribirlo perfecto. Si te quedas cerca, te avisamos sin penalizar; si
+              fallas, pierdes lo que vale la ronda y quedas fuera hasta la siguiente.
+            </p>
+          </form>
+        </div>
+
+        <div id="resultado" class="card result hidden" role="status" aria-live="polite">
+          <p id="resultado-titulo" class="award-title"></p>
+          <p id="resultado-detalle" class="muted"></p>
+        </div>
+        <p id="error-juego" class="error hidden" role="alert"></p>
+
+        <h2 class="section-title">Marcador</h2>
+        <ol id="marcador" class="score"></ol>
+      </section>
+    </main>
+
+    <script type="module" src="jugar.js?v=1"></script>
+  </body>
+</html>

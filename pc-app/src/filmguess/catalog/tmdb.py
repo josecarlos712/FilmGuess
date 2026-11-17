@@ -301,6 +301,23 @@ class TmdbClient:
         """
         return await self._get(f"/movie/{tmdb_id}/reviews", {})
 
+    async def movie_aliases(self, tmdb_id: int) -> dict[str, Any]:
+        """Títulos alternativos y traducciones de una película.
+
+        Args:
+            tmdb_id: ID de TMDB.
+
+        Returns:
+            JSON de ``/movie/{id}`` con ``alternative_titles`` y ``translations``.
+
+        Raises:
+            TmdbNotFoundError: Si TMDB no tiene esa película.
+            TmdbError: Si la petición falla.
+        """
+        return await self._get(
+            f"/movie/{tmdb_id}", {"append_to_response": "alternative_titles,translations"}
+        )
+
     async def _get(self, path: str, params: dict[str, str]) -> dict[str, Any]:
         last_error = "sin respuesta"
         for attempt in range(self._max_retries + 1):

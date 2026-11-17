@@ -811,3 +811,26 @@ if (token) {
   setLink("off");
   show("conexion");
 }
+
+// --- Invitación para jugar cada uno desde su móvil ---------------------------------
+
+$("btn-invitar").addEventListener("click", async () => {
+  const box = $("invitacion");
+  const url = $("invitacion-url");
+  if (!box.classList.contains("hidden")) {
+    box.classList.add("hidden");
+    url.classList.add("hidden");
+    $("btn-invitar").textContent = "Mostrar código de invitación";
+    return;
+  }
+  try {
+    const [svg, info] = await Promise.all([state.api.inviteQr(), state.api.invite()]);
+    box.innerHTML = svg;
+    url.textContent = info.url.split("#")[0];
+    box.classList.remove("hidden");
+    url.classList.remove("hidden");
+    $("btn-invitar").textContent = "Ocultar código";
+  } catch (error) {
+    showError("error-jugadores", error);
+  }
+});
