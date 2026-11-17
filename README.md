@@ -160,6 +160,7 @@ arrancar.bat
 | Comando | Qué hace |
 |---|---|
 | `arrancar.bat` | Arranca el servidor y el navegador de la tele (igual que `arrancar.bat servir`) |
+| `arrancar.bat packs` | Abre el editor de packs: listas propias de películas que conocéis (y algunas que no) para el modo al azar. Se guardan en `data/packs/` y se eligen en el móvil |
 | `arrancar.bat importar` | Importa o actualiza el catálogo (`--limite N`, `--sin-tmdb`, `--sin-imdb`, `--descargar-imdb`, `--descargar-wikidata`) |
 | `arrancar.bat pistas` | Descarga las pistas del catálogo de juego (`--todas` para rehacerlas, `--limite N`, `--exportar-sin-traducir FICHERO`, `--aplicar-traducciones`) |
 | `arrancar.bat netflix-login` | Abre el perfil de la app para iniciar sesión en Netflix |

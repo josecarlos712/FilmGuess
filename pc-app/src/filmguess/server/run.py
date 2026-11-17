@@ -21,6 +21,7 @@ from filmguess.catalog.tmdb import TmdbClient
 from filmguess.config import AppConfig, save_config
 from filmguess.game.scoreboard import Scoreboard
 from filmguess.game.session import GameSession
+from filmguess.packs.store import PACKS_DIRNAME, PackStore
 from filmguess.pairing.network import local_ip, pairing_url, qr_text
 from filmguess.panel.service import PanelService
 from filmguess.player.base import Player
@@ -94,6 +95,7 @@ def serve(config: AppConfig, player: Player | None = None) -> None:
             player or netflix_player(config),
             Scoreboard(data_dir / SCOREBOARD_FILENAME),
             config.random,
+            packs=PackStore(data_dir / PACKS_DIRNAME),
         )
         ip = local_ip()
         panel = panel_service(config, db)

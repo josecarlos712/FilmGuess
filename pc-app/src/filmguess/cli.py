@@ -128,6 +128,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="conserva las notas de IMDb (solo para uso personal; no lo repartas)",
     )
+    packs = sub.add_parser(
+        "packs",
+        help="abre el editor de packs: listas propias de películas conocidas y no conocidas",
+    )
+    packs.add_argument("--puerto", type=int, default=None, help="puerto local (por defecto 8766)")
+    packs.add_argument(
+        "--sin-navegador", action="store_true", help="no abre la página en el navegador"
+    )
     sub.add_parser(
         "netflix-login",
         help="abre el navegador de la app para iniciar sesión en Netflix (ciérralo al terminar)",
@@ -171,6 +179,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     if command == "exportar-catalogo":
         return _cmd_export_seed(config, args)
 
+    if command == "packs":
+        return _cmd_packs(config, args)
+
     if command == "servir":
         return _cmd_serve(config)
     if command == "netflix-login":
@@ -195,6 +206,22 @@ def _cmd_serve(config: AppConfig) -> int:
         return 1
     except OSError as exc:
         print(f"No se pudo arrancar el servidor en el puerto {config.server.port}: {exc}")
+        return 1
+    return 0
+
+
+def _cmd_packs(config: AppConfig, args: argparse.Namespace) -> int:
+    from filmguess.catalog.seed import SeedError
+    from filmguess.packs.app import DEFAULT_PORT, serve_packs
+
+    port = args.puerto or DEFAULT_PORT
+    try:
+        serve_packs(config, port=port, open_browser=not args.sin_navegador)
+    except SeedError as exc:
+        print(f"Error: {exc}")
+        return 1
+    except OSError as exc:
+        print(f"No se pudo arrancar el editor de packs en el puerto {port}: {exc}")
         return 1
     return 0
 

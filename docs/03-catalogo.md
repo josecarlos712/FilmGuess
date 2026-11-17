@@ -64,6 +64,22 @@ Grupo de candidatas:
 
 Los umbrales (`votos_minimos`, `tamano_grupo`, `anio_minimo`) se pueden cambiar en `config.toml`. Si no hay datos de IMDb, se usa `vote_count` y `vote_average` de TMDB.
 
+## Packs personalizados
+
+Un pack es una lista propia de películas para el modo al azar, pensada para jugar con títulos que el grupo conoce sin que sea demasiado fácil.
+
+- **Editor** (`arrancar.bat packs`): una web local aparte del juego (`http://localhost:8766`, opciones `--puerto N` y `--sin-navegador`). No necesita Netflix, el móvil ni clave de TMDB. Muestra el catálogo jugable de la película más votada a la menos, con buscador y filtro por categoría, y cada película se marca como **La conozco** o **No la conozco**. Los cambios se guardan solos.
+- **Mezcla**: cada pack fija cuántas de cada 10 rondas al azar salen de las conocidas (por defecto 7); el resto sale de las no conocidas. Si una lista está vacía se usa la otra.
+- **Fichero**: `data/packs/<identificador>.json`, que se puede copiar a otro PC:
+
+  ```json
+  { "nombre": "Noche de pelis", "proporcionConocidas": 0.7,
+    "conocidas": [70131314], "desconocidas": [60011152] }
+  ```
+
+- **En el juego**: `GET /packs` lista los packs con películas y `GET /random?pack=<identificador>` elige dentro del pack (se puede combinar con `categoria`). No repite una película hasta agotar el pack y descarta las que ya no están en Netflix España. En el móvil el pack se elige encima del botón «Al azar»; el buscador no cambia.
+- Código: `packs/store.py` (formato y validación), `packs/app.py` (editor), `catalog/random_pick.py::pick_from_pack` (elección).
+
 ## Alta y corrección manual (panel)
 
 - **Añadir por enlace**: se pega `https://www.netflix.com/title/80100172`; se extrae el ID, se lee el nombre de la ficha pública de Netflix y se pasa por los pasos 2 a 6.

@@ -438,6 +438,53 @@ class CatalogDB:
         rows = self._conn.execute(sql, params).fetchall()
         return [_row_to_movie(r) for r in rows]
 
+    def popular(
+        self, *, limit: int, offset: int = 0, genre_id: int | None = None
+    ) -> tuple[list[Movie], int]:
+        """Películas jugables, de la más votada (la más conocida) a la menos.
+
+        Args:
+            limit: Tamaño de página.
+            offset: Desplazamiento.
+            genre_id: Solo películas de este género de TMDB.
+
+        Returns:
+            La página (disponibles en ES y con confianza alta o media) y el total.
+        """
+        where = "WHERE m.netflix_es = 1 AND m.match_conf IN ('alta', 'media')"
+        params: list[Any] = []
+        if genre_id is not None:
+            where += f" AND {GENRE_FILTER}"
+            params.append(genre_id)
+        total = int(
+            self._conn.execute(f"SELECT COUNT(*) FROM movies m {where}", params).fetchone()[0]
+        )
+        rows = self._conn.execute(
+            f"{_SELECT_MOVIE} {where} "
+            "ORDER BY COALESCE(m.imdb_votes, 0) DESC, COALESCE(m.tmdb_vote_count, 0) DESC, "
+            "m.netflix_id LIMIT ? OFFSET ?",
+            (*params, limit, offset),
+        ).fetchall()
+        return [_row_to_movie(r) for r in rows], total
+
+    def get_many(self, netflix_ids: Sequence[int], *, genre_id: int | None = None) -> list[Movie]:
+        """Obtiene varias películas por su ID de Netflix.
+
+        Args:
+            netflix_ids: IDs pedidos.
+            genre_id: Solo las de este género de TMDB.
+
+        Returns:
+            Las que existen, en el orden pedido.
+        """
+        sql = f"{_SELECT_MOVIE} WHERE m.netflix_id IN (SELECT value FROM json_each(?))"
+        params: list[Any] = [json.dumps(list(netflix_ids))]
+        if genre_id is not None:
+            sql += f" AND {GENRE_FILTER}"
+            params.append(genre_id)
+        found = {m.netflix_id: m for m in map(_row_to_movie, self._conn.execute(sql, params))}
+        return [found[i] for i in netflix_ids if i in found]
+
     # --- Pistas ------------------------------------------------------------
 
     def clue_targets(self, *, refresh: bool = False) -> list[ClueTarget]:

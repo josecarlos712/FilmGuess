@@ -98,8 +98,14 @@ export function createApi(token) {
       if (categoria) params.set("categoria", String(categoria));
       return request("GET", `/search?${params}`);
     },
-    random: (categoria) =>
-      request("GET", categoria ? `/random?categoria=${categoria}` : "/random"),
+    random: (categoria, pack) => {
+      const params = new URLSearchParams();
+      if (categoria) params.set("categoria", String(categoria));
+      if (pack) params.set("pack", pack);
+      const query = params.toString();
+      return request("GET", query ? `/random?${query}` : "/random");
+    },
+    packs: () => request("GET", "/packs"),
     genres: () => request("GET", "/genres"),
     hint: () => request("POST", "/hint"),
     frame: () => request("POST", "/frame"),

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es" data-type="software" data-radius="soft">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="page-type" content="software" />
+    <meta name="site-kind" content="gaming" />
+    <meta name="theme-color" content="#111111" />
+    <meta name="description" content="Editor de packs de Adivina la Peli: elige qué películas salen al azar." />
+    <title>Packs · Adivina la Peli</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400..700&family=Figtree:wght@400..600&family=Martian+Mono:wght@400..500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/system.css" />
+    <link rel="stylesheet" href="/static/packs/packs.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div>
+        <p class="brand" data-text="marca"></p>
+        <p class="muted small" data-text="subtitulo"></p>
+      </div>
+      <form id="form-nuevo" class="new-pack">
+        <label class="sr-only" for="nuevo-nombre" data-text="nuevoCampo"></label>
+        <input id="nuevo-nombre" type="text" maxlength="60" autocomplete="off" required />
+        <button class="btn" type="submit" data-text="nuevoBoton"></button>
+      </form>
+    </header>
+
+    <p id="error" class="error hidden" role="alert"></p>
+
+    <nav id="packs" class="pack-tabs" aria-label="Packs"></nav>
+
+    <main id="editor" class="hidden">
+      <section class="card settings">
+        <label class="field grow">
+          <span class="field-label" data-text="nombreCampo"></span>
+          <input id="nombre" type="text" maxlength="60" autocomplete="off" />
+        </label>
+        <div class="field grow">
+          <label class="field-label" for="mezcla" data-text="mezclaCampo"></label>
+          <input id="mezcla" type="range" min="0" max="10" step="1" />
+          <p id="mezcla-nota" class="muted small"></p>
+        </div>
+        <div class="settings-end">
+          <p id="estado" class="muted small" aria-live="polite"></p>
+          <button id="btn-borrar" class="btn secondary" type="button" data-text="borrar"></button>
+        </div>
+      </section>
+
+      <div class="toolbar">
+        <div class="segmented" role="group">
+          <button type="button" class="seg on" data-view="explorar"></button>
+          <button type="button" class="seg" data-view="pack"></button>
+        </div>
+        <div id="filtros" class="filters">
+          <label class="sr-only" for="q" data-text="buscarCampo"></label>
+          <input id="q" type="search" autocomplete="off" />
+          <label class="sr-only" for="categoria" data-text="categoriaCampo"></label>
+          <select id="categoria"></select>
+        </div>
+      </div>
+      <p id="ayuda" class="muted small"></p>
+
+      <ul id="rejilla" class="grid"></ul>
+      <p id="vacio" class="muted hidden"></p>
+      <div class="more">
+        <button id="btn-mas" class="btn secondary hidden" type="button" data-text="cargarMas"></button>
+      </div>
+    </main>
+
+    <section id="bienvenida" class="welcome hidden">
+      <h1 data-text="bienvenidaTitulo"></h1>
+      <p class="muted" data-text="bienvenidaTexto"></p>
+    </section>
+
+    <script src="/static/packs/textos.js"></script>
+    <script src="/static/packs/packs.js"></script>
+  </body>
+</html>

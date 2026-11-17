@@ -16,6 +16,7 @@ from filmguess.catalog.tmdb import poster_url
 from filmguess.game.hints import MAX_FRAMES
 from filmguess.game.scoreboard import Player
 from filmguess.game.session import SessionState
+from filmguess.packs.store import Pack
 
 
 class PlayRequest(BaseModel):
@@ -141,6 +142,36 @@ def genres(items: list[tuple[Genre, int]]) -> dict[str, Any]:
         ``{categorias: [{id, nombre, peliculas}]}``.
     """
     return {"categorias": [{"id": g.id, "nombre": g.name, "peliculas": n} for g, n in items]}
+
+
+def pack_summary(pack: Pack) -> dict[str, Any]:
+    """Resumen de un pack.
+
+    Args:
+        pack: Pack.
+
+    Returns:
+        ``{id, nombre, conocidas, desconocidas, proporcionConocidas}`` (con recuentos).
+    """
+    return {
+        "id": pack.slug,
+        "nombre": pack.name,
+        "conocidas": len(pack.known),
+        "desconocidas": len(pack.unknown),
+        "proporcionConocidas": pack.known_ratio,
+    }
+
+
+def packs(items: list[Pack]) -> dict[str, Any]:
+    """Packs de ``GET /packs``.
+
+    Args:
+        items: Packs.
+
+    Returns:
+        ``{packs: [...]}``.
+    """
+    return {"packs": [pack_summary(p) for p in items]}
 
 
 def scoreboard(players: list[Player]) -> dict[str, Any]:

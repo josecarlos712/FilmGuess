@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from filmguess.catalog.db import CatalogDB
 from filmguess.catalog.models import Movie
 from filmguess.config import RandomConfig
+from filmguess.packs.store import Pack
 
 TMDB_VOTES_DIVISOR = 25
 """TMDB tiene muchos menos votos que IMDb: si se usa TMDB, el mínimo se divide por esto."""
@@ -101,3 +102,53 @@ def pick_random(
     choice = rng.choice(fresh or pool)
     db.record_random(choice.netflix_id)
     return choice
+
+
+def pick_from_pack(
+    db: CatalogDB,
+    pack: Pack,
+    config: RandomConfig,
+    rng: random.Random | None = None,
+    *,
+    genre_id: int | None = None,
+) -> Movie | None:
+    """Elige al azar una película de un pack y la apunta.
+
+    Con probabilidad ``pack.known_ratio`` sale una conocida y, si no, una no conocida.
+    Evita las elegidas en las últimas rondas mientras quede alguna otra en el pack, y
+    descarta las que ya no están en Netflix España.
+
+    Args:
+        db: Catálogo.
+        pack: Pack del que se elige.
+        config: Umbrales del modo aleatorio (solo se usa ``no_repeat``).
+        rng: Generador aleatorio (para pruebas).
+        genre_id: Solo películas de este género de TMDB.
+
+    Returns:
+        La película elegida, o ``None`` si el pack no tiene ninguna que se pueda jugar.
+    """
+    rng = rng or random.Random()
+    known = _playable(db, pack.known, genre_id)
+    unknown = _playable(db, pack.unknown, genre_id)
+    total = len(known) + len(unknown)
+    if not total:
+        return None
+    # En un pack pequeño no se puede evitar repetir tantas rondas como en el catálogo.
+    recent = set(db.recent_random(min(config.no_repeat, total - 1)))
+    fresh_known = [m for m in known if m.netflix_id not in recent]
+    fresh_unknown = [m for m in unknown if m.netflix_id not in recent]
+    if not fresh_known and not fresh_unknown:
+        fresh_known, fresh_unknown = known, unknown
+    first, second = (
+        (fresh_known, fresh_unknown)
+        if rng.random() < pack.known_ratio
+        else (fresh_unknown, fresh_known)
+    )
+    choice = rng.choice(first or second)
+    db.record_random(choice.netflix_id)
+    return choice
+
+
+def _playable(db: CatalogDB, ids: tuple[int, ...], genre_id: int | None) -> list[Movie]:
+    return [m for m in db.get_many(ids, genre_id=genre_id) if m.netflix_es is not False]

@@ -15,6 +15,8 @@ const state = {
   chosen: null, // { movie, hidden }
   wheel: null,
   genres: null, // [{ id, nombre, peliculas }]
+  packs: null, // [{ id, nombre, conocidas, desconocidas }]
+  pack: null, // id del pack elegido para «Al azar»; null = todo el catálogo
   category: null, // { id, nombre } o null
   picked: new Set(), // jugadores marcados como acertantes
   risk: null, // jugador que se arriesga ahora
@@ -212,6 +214,7 @@ async function runSearch(fresh) {
   showError("error-buscar", null);
   try {
     if (!state.genres) loadGenres();
+    if (!state.packs) loadPacks();
     const data = await state.api.search(s.q, s.page, s.all, state.category?.id);
     if (seq !== s.seq) return; // llegó una búsqueda más nueva
     s.total = data.total;
@@ -264,7 +267,7 @@ function renderResults(movies, fresh) {
 
 $("btn-azar").addEventListener("click", (event) =>
   run(event.currentTarget, "error-buscar", async () => {
-    const movie = await state.api.random(state.category?.id);
+    const movie = await state.api.random(state.category?.id, state.pack);
     choose(movie, true);
   }),
 );
@@ -607,6 +610,53 @@ function renderGenres() {
   $("categoria-nota").textContent = state.category
     ? TEXTOS.categoriaElegida(state.category.nombre)
     : TEXTOS.categoriaLibre;
+}
+
+// --- Packs -------------------------------------------------------------------------
+
+const PACK_KEY = "filmguess.pack";
+
+async function loadPacks() {
+  state.packs = [];
+  try {
+    state.packs = (await state.api.packs()).packs || [];
+  } catch {
+    state.packs = null; // se reintenta en la siguiente búsqueda
+  }
+  let saved = null;
+  try {
+    saved = localStorage.getItem(PACK_KEY);
+  } catch {
+    saved = null;
+  }
+  state.pack = (state.packs || []).some((p) => p.id === saved) ? saved : null;
+  renderPacks();
+}
+
+function renderPacks() {
+  const box = $("packs");
+  box.replaceChildren();
+  const packs = state.packs || [];
+  $("campo-pack").classList.toggle("hidden", packs.length === 0);
+  const options = [{ id: null, nombre: TEXTOS.todoElCatalogo }, ...packs];
+  for (const p of options) {
+    const chip = el("button", "chip", p.nombre);
+    chip.type = "button";
+    const on = state.pack === p.id;
+    chip.classList.toggle("on", on);
+    chip.setAttribute("aria-pressed", String(on));
+    chip.addEventListener("click", () => {
+      state.pack = p.id;
+      try {
+        if (p.id) localStorage.setItem(PACK_KEY, p.id);
+        else localStorage.removeItem(PACK_KEY);
+      } catch {
+        // Sin almacenamiento el pack elegido solo dura hasta recargar.
+      }
+      renderPacks();
+    });
+    box.appendChild(chip);
+  }
 }
 
 // --- Acertantes --------------------------------------------------------------------

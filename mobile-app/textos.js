@@ -25,6 +25,9 @@ export const TEXTOS = {
   alAzar: "Película al azar",
   categoria: "Categoría",
   todasCategorias: "Todas",
+  pack: "Pack para «Al azar»",
+  todoElCatalogo: "Todo el catálogo",
+  packNota: "El pack solo cambia lo que sale al azar; el buscador sigue mostrando todo.",
   categoriaLibre: "Sin categoría la ronda vale hasta 5 puntos.",
   categoriaElegida: (nombre) =>
     `${nombre}: el género se dice gratis y la ronda vale hasta 3 puntos.`,

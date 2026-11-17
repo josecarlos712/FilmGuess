@@ -1,0 +1,272 @@
+/* Editor de packs. Colores, letras y botones vienen de system.css. */
+
+body {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 28px clamp(16px, 4vw, 48px) 64px;
+}
+
+.small {
+  font-size: 0.875rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.error {
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  border: 1px solid var(--p-danger);
+  border-radius: var(--radius-s);
+  color: var(--p-danger);
+}
+
+input[type="text"],
+input[type="search"],
+select {
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--p-line);
+  border-radius: var(--radius-s);
+  background: var(--p-surface);
+  color: var(--p-ink);
+  font: 400 1rem var(--font-text);
+}
+input::placeholder {
+  color: var(--p-muted);
+}
+input:focus-visible,
+select:focus-visible,
+.pack-tab:focus-visible,
+.seg:focus-visible,
+.mark:focus-visible {
+  outline: 3px solid var(--p-accent);
+  outline-offset: 2px;
+}
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--p-accent);
+}
+
+/* --- Cabecera y lista de packs ---------------------------------------------------- */
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.brand {
+  font: var(--display-weight) 1.5rem/1.1 var(--font-display);
+  letter-spacing: var(--display-tracking);
+}
+.new-pack {
+  display: flex;
+  gap: 8px;
+}
+.new-pack input {
+  width: min(280px, 60vw);
+}
+
+.pack-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 24px 0 16px;
+}
+.pack-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--p-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--p-ink);
+  font: 500 1rem var(--font-text);
+  cursor: pointer;
+}
+.pack-tab.on {
+  border-color: var(--p-accent);
+  background: var(--p-accent);
+  color: var(--p-accent-ink);
+}
+.pack-tab.on .muted {
+  color: inherit;
+}
+
+.welcome {
+  max-width: 56ch;
+  margin-top: 12vh;
+}
+.welcome h1 {
+  margin-bottom: 12px;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  letter-spacing: var(--display-tracking-xl);
+}
+
+/* --- Ajustes del pack ------------------------------------------------------------- */
+
+.settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px 32px;
+  padding: 20px;
+}
+.field {
+  display: grid;
+  gap: 8px;
+}
+.field.grow {
+  flex: 1 1 260px;
+}
+.field-label {
+  color: var(--p-muted);
+  font-size: 0.875rem;
+}
+.settings-end {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  margin-left: auto;
+}
+#estado {
+  min-height: 1.4em;
+}
+
+/* --- Barra de vistas y filtros ---------------------------------------------------- */
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 12px 0;
+  background: var(--p-bg);
+}
+.segmented {
+  display: inline-flex;
+  padding: 4px;
+  border: 1px solid var(--p-line);
+  border-radius: var(--radius-s);
+}
+.seg {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--p-muted);
+  font: 500 1rem var(--font-text);
+  cursor: pointer;
+}
+.seg.on {
+  background: var(--p-surface-2);
+  color: var(--p-ink);
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.filters input {
+  width: min(320px, 70vw);
+}
+
+/* --- Cuadrícula de películas ------------------------------------------------------ */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 20px 16px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.movie {
+  display: grid;
+  grid-template-rows: auto auto auto 1fr;
+  gap: 4px;
+  min-width: 0;
+}
+.poster-frame {
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  margin-bottom: 6px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-s);
+  background: var(--p-surface);
+  transition: border-color 160ms var(--ease-out);
+}
+.poster-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.movie[data-mark="si"] .poster-frame {
+  border-color: var(--p-accent);
+}
+.movie[data-mark="no"] .poster-frame {
+  border-color: var(--p-ink);
+}
+.movie-title {
+  overflow: hidden;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.marks {
+  display: grid;
+  align-content: end;
+  gap: 6px;
+  margin-top: 6px;
+}
+.mark {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--p-line);
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--p-ink);
+  font: 500 0.875rem var(--font-text);
+  cursor: pointer;
+  transition:
+    background-color 160ms var(--ease-out),
+    border-color 160ms var(--ease-out);
+}
+.mark:hover {
+  border-color: var(--p-muted);
+}
+.mark.yes[aria-pressed="true"] {
+  border-color: var(--p-accent);
+  background: var(--p-accent);
+  color: var(--p-accent-ink);
+}
+.mark.no[aria-pressed="true"] {
+  border-color: var(--p-ink);
+  background: var(--p-ink);
+  color: var(--p-bg);
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+}
+#vacio {
+  margin-top: 32px;
+}

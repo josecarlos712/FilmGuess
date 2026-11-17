@@ -43,6 +43,8 @@ ERROR_STATUS: dict[str, int] = {
     "red_no_permitida": 403,
     "solo_local": 403,
     "no_encontrada": 404,
+    "pack_no_encontrado": 404,
+    "pack_invalido": 422,
     "jugador_no_encontrado": 404,
     "ruta_no_encontrada": 404,
     "sin_ronda": 409,
@@ -298,8 +300,15 @@ def create_app(
         )
 
     @app.get("/random", dependencies=authed)
-    async def get_random(categoria: Annotated[int | None, Query(gt=0)] = None) -> dict[str, Any]:
-        return schemas.movie_detail(session.random_movie(categoria))
+    async def get_random(
+        categoria: Annotated[int | None, Query(gt=0)] = None,
+        pack: Annotated[str | None, Query(min_length=1, max_length=60)] = None,
+    ) -> dict[str, Any]:
+        return schemas.movie_detail(session.random_movie(categoria, pack))
+
+    @app.get("/packs", dependencies=authed)
+    async def get_packs() -> dict[str, Any]:
+        return schemas.packs(session.pack_list())
 
     @app.get("/genres", dependencies=authed)
     async def get_genres() -> dict[str, Any]:

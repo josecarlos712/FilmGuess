@@ -12,7 +12,7 @@ from typing import Any, Literal, TypeVar
 from filmguess.catalog.clues import Genre
 from filmguess.catalog.db import CatalogDB
 from filmguess.catalog.models import Movie
-from filmguess.catalog.random_pick import pick_random
+from filmguess.catalog.random_pick import pick_from_pack, pick_random
 from filmguess.catalog.search import SearchPage, search_movies
 from filmguess.catalog.tmdb import poster_url
 from filmguess.config import RandomConfig
@@ -25,6 +25,7 @@ from filmguess.game.hints import (
     round_value,
 )
 from filmguess.game.scoreboard import Player, Scoreboard, ScoreboardError
+from filmguess.packs.store import Pack, PackError, PackStore
 from filmguess.player.base import Player as MoviePlayer
 from filmguess.player.base import PlayerError, PlayerStatus, RevealInfo
 
@@ -111,6 +112,7 @@ class GameSession:
         scoreboard: Scoreboard,
         random_config: RandomConfig,
         on_event: EventSink = _no_events,
+        packs: PackStore | None = None,
     ) -> None:
         """Crea la sesión.
 
@@ -120,12 +122,14 @@ class GameSession:
             scoreboard: Marcador persistente.
             random_config: Umbrales de la película aleatoria.
             on_event: Recibe los eventos ``estado``, ``error`` y ``marcador``.
+            packs: Packs personalizados; sin ellos solo se juega con el catálogo.
         """
         self.db = db
         self.player = player
         self.scoreboard = scoreboard
         self.random_config = random_config
         self.on_event = on_event
+        self.packs = packs
         self.screen: Screen = "espera"
         self.round: Round | None = None
         self.last_command: str | None = None
@@ -173,18 +177,31 @@ class GameSession:
             self.db, text, page=page, include_unconfirmed=include_all, genre_id=genre_id
         )
 
-    def random_movie(self, genre_id: int | None = None) -> Movie:
-        """Elige una película al azar entre las conocidas o bien valoradas.
+    def random_movie(self, genre_id: int | None = None, pack_slug: str | None = None) -> Movie:
+        """Elige una película al azar: de un pack o entre las conocidas y bien valoradas.
 
         Args:
             genre_id: Solo películas de esta categoría.
+            pack_slug: Pack del que se elige; ``None`` usa todo el catálogo.
 
         Returns:
             La película.
 
         Raises:
-            GameError: Si no hay ninguna candidata (``sin_candidatas``).
+            GameError: Si no hay ninguna candidata (``sin_candidatas``) o el pack no
+                existe (``pack_no_encontrado``).
         """
+        if pack_slug is not None:
+            pack = self._pack(pack_slug)
+            movie = pick_from_pack(self.db, pack, self.random_config, genre_id=genre_id)
+            if movie is None:
+                message = (
+                    f"El pack «{pack.name}» no tiene películas de esa categoría."
+                    if genre_id is not None
+                    else f"El pack «{pack.name}» no tiene películas que se puedan jugar."
+                )
+                raise GameError("sin_candidatas", message)
+            return movie
         movie = pick_random(self.db, self.random_config, genre_id=genre_id)
         if movie is None:
             message = (
@@ -194,6 +211,22 @@ class GameSession:
             )
             raise GameError("sin_candidatas", message)
         return movie
+
+    def pack_list(self) -> list[Pack]:
+        """Packs personalizados con alguna película.
+
+        Returns:
+            Los packs, por nombre.
+        """
+        return [p for p in self.packs.list() if p.size] if self.packs else []
+
+    def _pack(self, slug: str) -> Pack:
+        if self.packs is None:
+            raise GameError("pack_no_encontrado", "Ese pack no existe.")
+        try:
+            return self.packs.get(slug)
+        except PackError as exc:
+            raise GameError(exc.code, exc.message) from exc
 
     def genres(self) -> list[tuple[Genre, int]]:
         """Categorías que se pueden jugar, con cuántas películas tienen.
