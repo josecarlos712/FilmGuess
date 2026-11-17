@@ -145,7 +145,7 @@ function renderGame() {
     hints.replaceChildren();
     for (const h of round.pistas || []) {
       const item = el("li");
-      item.append(el("span", "field-label", h.etiqueta), el("p", "", h.texto));
+      item.append(el("span", "p-hint-label", h.etiqueta), el("span", "p-hint-text", h.texto));
       hints.appendChild(item);
     }
   }
@@ -164,7 +164,7 @@ function renderGame() {
   const box = $("resultado");
   box.classList.toggle("hidden", !result);
   if (result) {
-    box.className = `card result ${result.tipo}`;
+    box.className = `card p-result ${result.tipo}`;
     $("resultado-titulo").textContent = result.titulo;
     $("resultado-detalle").textContent = result.detalle || "";
   }
@@ -175,8 +175,8 @@ function renderScore() {
   const list = $("marcador");
   list.replaceChildren();
   for (const p of state.players) {
-    const row = el("li", p.id === state.me ? "score-row me" : "score-row");
-    row.append(el("span", "score-name", p.nombre), el("span", "score-points num", String(p.puntos)));
+    const row = el("li", p.id === state.me ? "me" : "");
+    row.append(el("span", "", p.nombre), el("span", "num", String(p.puntos)));
     list.appendChild(row);
   }
 }

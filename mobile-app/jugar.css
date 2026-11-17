@@ -1,24 +1,93 @@
-/* Página del jugador: solo lo que no está ya en app.css. */
+/* Página del jugador: piezas propias, sin depender de las del mando. */
 .grow {
   flex: 1;
 }
 
-.result {
-  border-left: 4px solid var(--p-line);
+.p-round,
+.p-result,
+#espera {
+  padding: 18px 20px;
 }
 
-.result.good {
-  border-left-color: var(--p-accent);
+.p-round {
+  display: grid;
+  gap: 14px;
 }
 
-.result.bad {
-  border-left-color: var(--p-danger);
+.p-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.result.near {
-  border-left-color: var(--p-muted);
+.p-value {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: 1.5rem;
+  color: var(--p-accent);
 }
 
-.score-row.me .score-name {
+.p-hints {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.p-hints li {
+  display: grid;
+  gap: 2px;
+  padding-top: 10px;
+  border-top: 1px solid var(--p-line);
+}
+
+.p-hint-label {
+  font-size: 0.8rem;
+  color: var(--p-muted);
+}
+
+.p-hint-text {
+  color: var(--p-ink);
+}
+
+.p-result {
+  display: grid;
+  gap: 4px;
+  box-shadow: inset 4px 0 0 var(--p-line);
+  padding-left: 24px;
+}
+
+.p-result.good {
+  box-shadow: inset 4px 0 0 var(--p-accent);
+}
+
+.p-result.bad {
+  box-shadow: inset 4px 0 0 var(--p-danger);
+}
+
+.p-result.near {
+  box-shadow: inset 4px 0 0 var(--p-muted);
+}
+
+.p-result p {
+  margin: 0;
+}
+
+.p-score {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.p-score li {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--p-line);
+}
+
+.p-score li.me {
   font-weight: 700;
 }

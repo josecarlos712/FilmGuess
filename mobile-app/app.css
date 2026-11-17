@@ -1067,6 +1067,10 @@ img.poster.loaded {
 }
 
 /* Invitación para jugar desde cada móvil */
+.invite {
+  padding: 18px 20px;
+}
+
 .invite-qr {
   background: var(--p-qr-bg, #fff);
   border-radius: var(--radius-m);

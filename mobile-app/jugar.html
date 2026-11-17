@@ -14,7 +14,7 @@
     />
     <link rel="stylesheet" href="/static/system.css" />
     <link rel="stylesheet" href="app.css?v=4" />
-    <link rel="stylesheet" href="jugar.css?v=1" />
+    <link rel="stylesheet" href="jugar.css?v=3" />
   </head>
   <body>
     <header class="topbar">
@@ -64,12 +64,12 @@
         </div>
 
         <div id="jugando" class="stack hidden">
-          <div class="card stack">
-            <div class="round-head">
-              <span id="valor" class="round-value num"></span>
+          <div class="card p-round">
+            <div class="p-head">
+              <span id="valor" class="p-value"></span>
               <span id="categoria" class="tag hidden"></span>
             </div>
-            <ul id="pistas" class="hints"></ul>
+            <ul id="pistas" class="p-hints"></ul>
           </div>
 
           <form id="form-respuesta" class="stack" novalidate>
@@ -93,17 +93,17 @@
           </form>
         </div>
 
-        <div id="resultado" class="card result hidden" role="status" aria-live="polite">
+        <div id="resultado" class="card p-result hidden" role="status" aria-live="polite">
           <p id="resultado-titulo" class="award-title"></p>
           <p id="resultado-detalle" class="muted"></p>
         </div>
         <p id="error-juego" class="error hidden" role="alert"></p>
 
         <h2 class="section-title">Marcador</h2>
-        <ol id="marcador" class="score"></ol>
+        <ol id="marcador" class="p-score"></ol>
       </section>
     </main>
 
-    <script type="module" src="jugar.js?v=1"></script>
+    <script type="module" src="jugar.js?v=2"></script>
   </body>
 </html>
