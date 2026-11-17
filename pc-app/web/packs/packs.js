@@ -73,13 +73,13 @@ function renderPacks() {
 }
 
 async function loadPacks() {
-  state.packs = (await api("GET", "/api/packs")).packs;
+  state.packs = (await api("GET", "api/packs")).packs;
   renderPacks();
 }
 
 async function openPack(id) {
   await flushSave();
-  const data = await guarded(() => api("GET", `/api/packs/${id}`));
+  const data = await guarded(() => api("GET", `api/packs/${id}`));
   if (!data) return;
   state.pack = {
     id: data.id,
@@ -106,7 +106,7 @@ $("form-nuevo").addEventListener("submit", async (event) => {
   event.preventDefault();
   const nombre = $("nuevo-nombre").value.trim();
   if (!nombre) return;
-  const data = await guarded(() => api("POST", "/api/packs", { nombre }));
+  const data = await guarded(() => api("POST", "api/packs", { nombre }));
   if (!data) return;
   $("nuevo-nombre").value = "";
   await guarded(loadPacks);
@@ -120,7 +120,7 @@ $("btn-borrar").addEventListener("click", async () => {
   clearTimeout(state.saveTimer);
   state.dirty = false;
   await state.saving;
-  const done = await guarded(() => api("DELETE", `/api/packs/${pack.id}`));
+  const done = await guarded(() => api("DELETE", `api/packs/${pack.id}`));
   if (!done) return;
   state.pack = null;
   await guarded(loadPacks);
@@ -155,7 +155,7 @@ function flushSave() {
   };
   // Los guardados van en cola: el último enviado es siempre el último estado.
   state.saving = state.saving.then(async () => {
-    const saved = await guarded(() => api("PUT", `/api/packs/${pack.id}`, body));
+    const saved = await guarded(() => api("PUT", `api/packs/${pack.id}`, body));
     if (!saved) return;
     const index = state.packs.findIndex((p) => p.id === saved.id);
     if (index >= 0) state.packs[index] = saved;
@@ -255,7 +255,7 @@ async function loadCatalog(fresh) {
   const seq = ++state.seq;
   const params = new URLSearchParams({ q: $("q").value.trim(), pagina: String(state.page) });
   if ($("categoria").value) params.set("categoria", $("categoria").value);
-  const data = await guarded(() => api("GET", `/api/peliculas?${params}`));
+  const data = await guarded(() => api("GET", `api/peliculas?${params}`));
   if (!data || seq !== state.seq || state.view !== "explorar") return;
   state.total = data.total;
   renderGrid(data.resultados, fresh);
@@ -312,7 +312,7 @@ async function loadGenres() {
   const all = el("option", "", TEXTOS.todasCategorias);
   all.value = "";
   select.replaceChildren(all);
-  const data = await guarded(() => api("GET", "/api/categorias"));
+  const data = await guarded(() => api("GET", "api/categorias"));
   for (const g of data?.categorias || []) {
     const option = el("option", "", g.nombre);
     option.value = String(g.id);
@@ -325,6 +325,8 @@ async function start() {
     node.textContent = TEXTOS[node.dataset.text];
   }
   $("nuevo-nombre").placeholder = TEXTOS.nuevoPlaceholder;
+  // Dentro de la app del PC (no en «arrancar.bat packs») se puede volver al panel.
+  $("volver").classList.toggle("hidden", location.pathname === "/");
   $("q").placeholder = TEXTOS.buscarPlaceholder;
   document.querySelector('[data-view="explorar"]').textContent = TEXTOS.vistaExplorar;
   document.querySelector('[data-view="pack"]').textContent = TEXTOS.vistaPack(0);

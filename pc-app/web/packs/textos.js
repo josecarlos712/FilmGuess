@@ -1,6 +1,7 @@
 // Textos del editor de packs (español).
 const TEXTOS = {
   marca: "Packs · Adivina la Peli",
+  volver: "← Volver al panel",
   subtitulo: "Elige qué películas pueden salir al azar.",
   nuevoCampo: "Nombre del pack nuevo",
   nuevoPlaceholder: "Nombre del pack nuevo",

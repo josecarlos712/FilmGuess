@@ -68,7 +68,7 @@ Los umbrales (`votos_minimos`, `tamano_grupo`, `anio_minimo`) se pueden cambiar 
 
 Un pack es una lista propia de películas para el modo al azar, pensada para jugar con títulos que el grupo conoce sin que sea demasiado fácil.
 
-- **Editor** (`arrancar.bat packs`): una web local aparte del juego (`http://localhost:8766`, opciones `--puerto N` y `--sin-navegador`). No necesita Netflix, el móvil ni clave de TMDB. Muestra el catálogo jugable de la película más votada a la menos, con buscador y filtro por categoría, y cada película se marca como **La conozco** o **No la conozco**. Los cambios se guardan solos.
+- **Editor**: en el PC, desde el panel de la app (enlace «Packs de películas», `http://localhost:8765/editor-packs/`), con el juego arrancado; un pack guardado se puede jugar al momento. Solo se abre en el propio PC, nunca desde el móvil. También funciona sin arrancar el juego con `arrancar.bat packs` (`http://localhost:8766`, opciones `--puerto N` y `--sin-navegador`). No necesita Netflix, el móvil ni clave de TMDB. Muestra el catálogo jugable de la película más votada a la menos, con buscador y filtro por categoría, y cada película se marca como **La conozco** o **No la conozco**. Los cambios se guardan solos.
 - **Mezcla**: cada pack fija cuántas de cada 10 rondas al azar salen de las conocidas (por defecto 7); el resto sale de las no conocidas. Si una lista está vacía se usa la otra.
 - **Fichero**: `data/packs/<identificador>.json`, que se puede copiar a otro PC:
 

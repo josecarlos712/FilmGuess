@@ -7,6 +7,7 @@ export const TEXTOS = {
   navNetflix: "Netflix",
   navCatalogo: "Catálogo",
   navAlta: "Añadir película",
+  navPacks: "Packs de películas",
 
   estadoTitulo: "Estado",
   navegador: "Navegador de la tele",

@@ -23,6 +23,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from filmguess.game.session import GameError, GameSession
+from filmguess.packs.app import create_packs_app
 from filmguess.pairing.network import (
     is_allowed_client,
     is_localhost,
@@ -37,6 +38,9 @@ from filmguess.server.events import EventHub
 from filmguess.webfiles import MOBILE_DIR, PANEL_PAGE, TV_PAGE, WEB_DIR
 
 log = logging.getLogger(__name__)
+
+PACKS_EDITOR_PATH = "/editor-packs"
+"""Dirección del editor de packs dentro de la app del PC."""
 
 ERROR_STATUS: dict[str, int] = {
     "token_invalido": 401,
@@ -523,6 +527,9 @@ def create_app(
     async def get_version() -> dict[str, str]:
         return {"version": files_version(MOBILE_DIR)}
 
+    if session.packs is not None:
+        # El editor de packs también vive dentro de la app del PC (solo en el propio PC).
+        app.mount(PACKS_EDITOR_PATH, create_packs_app(session.db, session.packs))
     app.mount("/static", FreshStaticFiles(directory=WEB_DIR), name="static")
     app.mount("/m", FreshStaticFiles(directory=MOBILE_DIR, html=True), name="mobile")
     app.add_middleware(LocalNetworkOnly)

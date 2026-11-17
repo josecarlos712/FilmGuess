@@ -293,6 +293,34 @@ def test_game_random_pack_errors(game: TestClient, store: PackStore) -> None:
     assert "Sin acción" in empty.json()["mensaje"]
 
 
+def test_game_serves_the_editor_on_the_pc_only(
+    catalog: CatalogDB, store: PackStore, tmp_path: Path
+) -> None:
+    session = GameSession(
+        catalog, FakePlayer(), Scoreboard(tmp_path / "s.json"), CONFIG, packs=store
+    )
+    app = create_app(session, TOKEN, port=8765, ip="192.168.1.10")
+    pc = TestClient(app, client=LOCAL)
+    page = pc.get("/editor-packs/")
+    assert page.status_code == 200 and "packs.js" in page.text
+    assert pc.get("/editor-packs", follow_redirects=False).status_code in (307, 308)
+    created = pc.post("/editor-packs/api/packs", json={"nombre": "Desde el PC"}, headers=EDIT)
+    assert created.json()["id"] == "desde-el-pc"
+    saved = pc.put(
+        "/editor-packs/api/packs/desde-el-pc",
+        json={"nombre": "Desde el PC", "conocidas": [2], "desconocidas": []},
+        headers=EDIT,
+    )
+    assert saved.status_code == 200
+    # El pack recién guardado ya se puede jugar, sin reiniciar nada.
+    assert pc.get("/random?pack=desde-el-pc", headers=HEADERS).json()["netflixId"] == 2
+    assert pc.get("/editor-packs/api/peliculas").json()["total"] == 5
+    # Desde el móvil (otra máquina de la red) no se abre ni se cambia nada.
+    phone = TestClient(app, client=LAN)
+    assert phone.get("/editor-packs/").status_code == 403
+    assert phone.get("/editor-packs/api/packs").status_code == 403
+
+
 def test_game_without_packs(catalog: CatalogDB, tmp_path: Path) -> None:
     session = GameSession(catalog, FakePlayer(), Scoreboard(tmp_path / "s.json"), CONFIG)
     client = TestClient(create_app(session, TOKEN, port=8765, ip="192.168.1.10"), client=LAN)
